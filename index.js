@@ -31,7 +31,7 @@ for (const folder of commandFolders) {
   }
 }
 
-client.once('ready', () => {
+client.once('clientReady', () => {
   console.log(`✅ Bot zalogowany jako ${client.user.tag}`);
   console.log(`🎮 Załadowano ${client.commands.size} komend`);
   client.user.setActivity('!help - Zobacz komendy', { type: 'PLAYING' });
