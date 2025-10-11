@@ -1,0 +1,50 @@
+module.exports = {
+  name: 'wordchain',
+  description: 'Łańcuch słów - każde słowo zaczyna się ostatnią literą poprzedniego',
+  async execute(message, args, client) {
+    const gameId = `chain_${message.channel.id}`;
+    
+    if (client.games.has(gameId)) {
+      return message.reply('❌ Gra już trwa na tym kanale!');
+    }
+
+    const startWords = ['kot', 'dom', 'las', 'ser', 'rok', 'noc'];
+    const currentWord = startWords[Math.floor(Math.random() * startWords.length)];
+    const usedWords = new Set([currentWord]);
+
+    client.games.set(gameId, { currentWord, usedWords });
+
+    message.channel.send(`🔗 **Łańcuch słów!**\n\nPierwsze słowo: **${currentWord}**\n\nPodaj słowo zaczynające się na literę: **${currentWord.slice(-1).toUpperCase()}**\n\n(Masz 30 sekund między słowami)`);
+
+    const filter = m => !m.author.bot && /^[a-ząćęłńóśźż]+$/i.test(m.content);
+    const collector = message.channel.createMessageCollector({ filter, idle: 30000 });
+
+    collector.on('collect', m => {
+      const game = client.games.get(gameId);
+      const word = m.content.toLowerCase().trim();
+      const lastLetter = game.currentWord.slice(-1);
+
+      if (!word.startsWith(lastLetter)) {
+        return m.reply(`❌ Słowo musi zaczynać się na literę **${lastLetter.toUpperCase()}**!`);
+      }
+
+      if (game.usedWords.has(word)) {
+        return m.reply('❌ To słowo już było użyte!');
+      }
+
+      game.usedWords.add(word);
+      game.currentWord = word;
+      
+      const nextLetter = word.slice(-1).toUpperCase();
+      m.reply(`✅ Dobrze! Następne słowo na: **${nextLetter}**`);
+    });
+
+    collector.on('end', () => {
+      if (client.games.has(gameId)) {
+        const game = client.games.get(gameId);
+        message.channel.send(`🏁 Koniec gry! Użyto ${game.usedWords.size} słów!`);
+        client.games.delete(gameId);
+      }
+    });
+  },
+};
