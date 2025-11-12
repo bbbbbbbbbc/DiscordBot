@@ -79,6 +79,11 @@ module.exports = {
         await statusMsg.edit(downloadingMsg);
       }
 
+      console.log('🔍 DEBUG - url:', url);
+      console.log('🔍 DEBUG - typeof url:', typeof url);
+      console.log('🔍 DEBUG - format:', format);
+      console.log('🔍 DEBUG - info:', info);
+      
       const stream = await play.stream(url, {
         quality: format === 'audio' ? 2 : 0
       });
