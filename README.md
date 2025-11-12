@@ -556,7 +556,7 @@ Chcesz pomóc w rozwoju? Wspaniale!
 
 ## 📜 Licencja
 
-Ten projekt jest na licencji **MIT** - zobacz plik [LICENSE](LICENSE) dla szczegółów.
+Ten projekt jest na licencji Widmokonrad License v1.0 - zobacz plik [LICENSE](LICENSE) dla szczegółów.
 
 ---
 
