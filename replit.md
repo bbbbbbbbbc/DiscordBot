@@ -17,11 +17,13 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 - Komendy użytkowe
 
 ## Ostatnie zmiany
-- 2025-11-12: **Rozszerzenie komendy /download** - dodano wsparcie Spotify i wybór jakości
-  - Obsługa YouTube i Spotify (utwory)
-  - Wybór jakości: 360p, 480p, 720p, 1080p, najlepsza
-  - Użycie biblioteki spotifydl-core do lepszego pobierania
-  - Automatyczne dekodowanie YouTube signature
+- 2025-11-12: **Przepisanie komendy /download** - uproszczona, stabilna wersja
+  - TYLKO YouTube (usunięto Spotify który wymagał API credentials)
+  - Użycie @distube/ytdl-core do pobierania
+  - Obsługa Video (mp4) i Audio (mp3)
+  - Timeout 5 minut, proper error handling
+  - Upload na Google Drive
+  - **Uwaga:** Niektóre filmy mogą mieć błąd 403 (known issue w bibliotece ytdl-core)
 - 2025-11-12: **Konwersja na slash commands** - wszystkie 58 komend przekonwertowane na nowoczesne slash commands (`/`)
   - Komendy widoczne w menu Discord
   - Pełna kompatybilność wstecz (działają też z `!`)
