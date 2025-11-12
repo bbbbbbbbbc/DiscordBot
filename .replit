@@ -7,7 +7,7 @@ integrations = ["google-drive:1.0.0"]
 channel = "stable-25_05"
 
 [workflows]
-runButton = "Project"
+runButton = "Discord Bot"
 
 [[workflows.workflow]]
 name = "Project"
@@ -28,3 +28,6 @@ args = "node index.js"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[deployment]
+deploymentTarget = "cloudrun"

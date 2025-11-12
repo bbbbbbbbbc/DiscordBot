@@ -75,7 +75,16 @@ module.exports = {
 
     } catch (error) {
       console.error(error);
-      message.reply('❌ Wystąpił błąd podczas odtwarzania muzyki!');
+      
+      if (error.message && error.message.includes('Sign in to confirm your age')) {
+        return message.reply('❌ Ten film ma ograniczenie wieku! YouTube wymaga zalogowania dla takich filmów.\n💡 Spróbuj innego utworu bez ograniczenia wieku.');
+      }
+      
+      if (error.message && error.message.includes('Video unavailable')) {
+        return message.reply('❌ Film niedostępny! Może być zablokowany w Twoim regionie lub usunięty.');
+      }
+      
+      message.reply('❌ Wystąpił błąd podczas odtwarzania muzyki! Spróbuj innego utworu.');
     }
   },
 };
