@@ -82,16 +82,48 @@ module.exports = {
 
       let selectedFormat;
       if (format === 'audio') {
-        selectedFormat = info.format.find(f => f.mimeType && f.mimeType.includes('audio/mp4'));
+        selectedFormat = info.format.find(f => 
+          f.mimeType && 
+          f.mimeType.includes('audio/mp4') && 
+          !f.hasOwnProperty('s') &&
+          f.url
+        );
+        if (!selectedFormat) {
+          selectedFormat = info.format.find(f => f.mimeType && f.mimeType.includes('audio'));
+        }
       } else {
-        selectedFormat = info.format.find(f => f.mimeType && f.mimeType.includes('video/mp4') && f.hasOwnProperty('audioChannels'));
+        selectedFormat = info.format.find(f => 
+          f.mimeType && 
+          f.mimeType.includes('video/mp4') && 
+          f.hasOwnProperty('audioChannels') &&
+          !f.hasOwnProperty('s') &&
+          f.url
+        );
+        if (!selectedFormat) {
+          selectedFormat = info.format.find(f => 
+            f.mimeType && 
+            f.mimeType.includes('video/mp4') && 
+            f.hasOwnProperty('audioChannels')
+          );
+        }
       }
 
+      if (!selectedFormat) {
+        selectedFormat = info.format.find(f => !f.hasOwnProperty('s') && f.url);
+      }
+      
       if (!selectedFormat) {
         selectedFormat = info.format[0];
       }
 
-      const downloadUrl = selectedFormat.url;
+      let downloadUrl = selectedFormat.url;
+      
+      if (selectedFormat.hasOwnProperty('s')) {
+        const decipher = await play.decipher(info.html5player, selectedFormat.s);
+        const sp = selectedFormat.sp || 'sig';
+        downloadUrl = `${downloadUrl}&${sp}=${encodeURIComponent(decipher)}`;
+      }
+
       const writeStream = fs.createWriteStream(filePath);
 
       await new Promise((resolve, reject) => {
