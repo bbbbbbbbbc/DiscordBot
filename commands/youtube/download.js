@@ -27,17 +27,26 @@ module.exports = {
     
     let url, format;
     if (isSlash) {
-      url = interaction.options.getString('url');
-      format = interaction.options.getString('format') || 'video';
+      url = interaction.options?.getString('url');
+      format = interaction.options?.getString('format') || 'video';
     } else {
       url = args[0];
       format = args[1] === 'audio' ? 'audio' : 'video';
     }
     
-    if (!url || play.yt_validate(url) !== 'video') {
-      const message = '❌ Podaj prawidłowy link do YouTube! Użyj: `/download url:[link YouTube]`';
+    if (!url) {
+      const message = '❌ Musisz podać URL! Użyj: `/download url:[link do YouTube]`';
       if (isSlash) {
-        return await interaction.reply(message);
+        return await interaction.reply({ content: message, ephemeral: true });
+      } else {
+        return interaction.reply(message);
+      }
+    }
+    
+    if (play.yt_validate(url) !== 'video') {
+      const message = '❌ To nie jest prawidłowy link do YouTube!';
+      if (isSlash) {
+        return await interaction.reply({ content: message, ephemeral: true });
       } else {
         return interaction.reply(message);
       }
