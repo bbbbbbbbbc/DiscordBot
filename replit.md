@@ -17,6 +17,18 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 - Komendy użytkowe
 
 ## Ostatnie zmiany
+- 2025-11-12: **Dodano 7 nowych komend (65 total)**
+  - ✅ **5 nowych komend moderacyjnych:**
+    - /mute - wyciszanie użytkowników (timeout 1-40320 minut)
+    - /unmute - odwyciszanie użytkowników
+    - /warn - ostrzeganie użytkowników z zapisem do pliku
+    - /warnings - wyświetlanie ostrzeżeń użytkownika
+    - /slowmode - tryb powolny na kanale (0-21600 sekund)
+  - ✅ **2 nowe komendy AI (wymagają OPENAI_API_KEY):**
+    - /generatemap - generowanie map do gier (5 typów: platformówka, RPG, labirynt, dungeon, Minecraft)
+    - /minecraftplugin - generowanie pluginów Minecraft (Java, Spigot/Paper/Bukkit)
+  - 🔒 Bezpieczeństwo: sanityzacja nazw plików, path traversal naprawiony
+  - 📦 Nowa zależność: openai (npm)
 - 2025-11-12: **FINALNA NAPRAWA /play i /download - WSZYSTKO DZIAŁA**
   - ✅ **NAPRAWIONY /play**:
     - Dodano play.setToken() w index.js dla inicjalizacji YouTube cookies
@@ -53,7 +65,7 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 .
 ├── index.js                 # Główny plik bota z integracjami
 ├── commands/
-│   ├── moderation/         # Moderacja (5 komend)
+│   ├── moderation/         # Moderacja (10 komend)
 │   ├── games/              # 15 gier
 │   ├── economy/            # System ekonomii (8 komend)
 │   ├── leveling/           # System poziomów (3 komendy)
@@ -63,7 +75,7 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 │   ├── fun/                # Rozrywka (4 komendy)
 │   ├── stats/              # Statystyki (3 komendy)
 │   ├── utility/            # Komendy użytkowe (5 komend)
-│   ├── ai/                 # Komendy AI (1 komenda)
+│   ├── ai/                 # Komendy AI (3 komendy)
 │   └── youtube/            # YouTube (2 komendy)
 ├── utils/
 │   └── googleDrive.js      # Google Drive integration
@@ -83,7 +95,7 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 ### Wymagane zmienne środowiskowe:
 - `DISCORD_BOT_TOKEN` - Token bota Discord (WYMAGANE) ✅
 - `CLIENT_ID` - Application ID bota Discord (dla slash commands) ✅
-- `OPENAI_API_KEY` - Klucz OpenAI (opcjonalnie, dla AI)
+- `OPENAI_API_KEY` - Klucz OpenAI (opcjonalnie, dla AI) ✅
 - `YOUTUBE_API_KEY` - Klucz YouTube Data API (opcjonalnie, dla powiadomień)
 
 ### Google Drive
@@ -98,18 +110,23 @@ Wymagane intenty:
 
 ## Uruchomienie
 Bot uruchamia się przez workflow: `node index.js`
-Status: ✅ DZIAŁA (58 slash commands zarejestrowanych i załadowanych)
+Status: ✅ DZIAŁA (65 slash commands zarejestrowanych i załadowanych)
 
 ### Rejestracja slash commands
 Po zmianach w komendach uruchom: `node registerCommands.js`
 To zaktualizuje wszystkie slash commands w Discord.
 
-## Wszystkie funkcje (58 komend)
+## Wszystkie funkcje (65 komend)
 
-### 🛡️ Moderacja (5 komend)
+### 🛡️ Moderacja (10 komend)
 - `/ban` - Banuje użytkownika
 - `/kick` - Wyrzuca użytkownika
 - `/clear` - Usuwa wiadomości
+- `/mute` - Wycisz użytkownika (timeout)
+- `/unmute` - Odwycisz użytkownika
+- `/warn` - Ostrzeż użytkownika (zapisywane)
+- `/warnings` - Zobacz ostrzeżenia użytkownika
+- `/slowmode` - Ustaw tryb powolny na kanale
 - `/automod` - Włącz/wyłącz automoderację
 - `/filter` - Zarządzaj filtrem słów
 
@@ -183,8 +200,10 @@ To zaktualizuje wszystkie slash commands w Discord.
 - `/userinfo` - Info o użytkowniku
 - `/help` - Lista wszystkich komend
 
-### 🤖 AI (1 komenda)
+### 🤖 AI (3 komendy)
 - `/chat` / `/ask` - Rozmawiaj z AI
+- `/generatemap` - Wygeneruj mapę do gry (5 typów)
+- `/minecraftplugin` - Wygeneruj plugin Minecraft
 
 ### 📺 YouTube (2 komendy)
 - `/download` - Pobierz film/muzykę z YouTube lub Spotify i prześlij na Drive
