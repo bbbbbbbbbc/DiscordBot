@@ -1,4 +1,5 @@
 const ytdl = require('@distube/ytdl-core');
+const youtubedl = require('youtube-dl-exec');
 const fs = require('fs');
 const path = require('path');
 const { getUncachableGoogleDriveClient } = require('../../utils/googleDrive');
@@ -109,27 +110,8 @@ module.exports = {
         throw new Error('Nieobsługiwany link! Obsługiwane platformy: YouTube, Spotify');
       }
 
-      let ytdlOptions = {};
-      
-      if (process.env.YOUTUBE_COOKIES) {
-        try {
-          const cookiesArray = process.env.YOUTUBE_COOKIES.split(';').map(cookie => {
-            const [name, ...valueParts] = cookie.trim().split('=');
-            return {
-              name: name.trim(),
-              value: valueParts.join('=')
-            };
-          });
-          
-          const agent = ytdl.createAgent(cookiesArray);
-          ytdlOptions.agent = agent;
-        } catch (cookieError) {
-          console.error('Error parsing cookies:', cookieError);
-        }
-      }
-
-      const info = await ytdl.getInfo(youtubeUrl, ytdlOptions);
       if (!title) {
+        const info = await ytdl.getBasicInfo(youtubeUrl);
         title = info.videoDetails.title;
       }
       
@@ -145,47 +127,35 @@ module.exports = {
         await statusMsg.edit(downloadingMsg);
       }
 
-      const selectedFormat = ytdl.chooseFormat(info.formats, {
-        quality: format === 'audio' ? 'highestaudio' : 'highest',
-        filter: format === 'audio' ? 'audioonly' : 'audioandvideo'
-      });
+      const ytdlpOptions = {
+        output: filePath,
+        noPlaylist: true,
+      };
 
-      if (!selectedFormat) {
-        throw new Error('Nie znaleziono odpowiedniego formatu dla tego filmu');
+      if (format === 'audio') {
+        ytdlpOptions.extractAudio = true;
+        ytdlpOptions.audioFormat = 'mp3';
+        ytdlpOptions.audioQuality = 0;
+      } else {
+        ytdlpOptions.format = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+        ytdlpOptions.mergeOutputFormat = 'mp4';
       }
 
-      const downloadOptions = { format: selectedFormat };
-      if (ytdlOptions.agent) {
-        downloadOptions.agent = ytdlOptions.agent;
+      if (process.env.YOUTUBE_COOKIES) {
+        const cookiesFile = path.join(downloadsDir, 'cookies.txt');
+        const cookiesNetscape = process.env.YOUTUBE_COOKIES.split(';').map(cookie => {
+          const [name, value] = cookie.trim().split('=');
+          return `.youtube.com\tTRUE\t/\tTRUE\t0\t${name.trim()}\t${value || ''}`;
+        }).join('\n');
+        fs.writeFileSync(cookiesFile, `# Netscape HTTP Cookie File\n${cookiesNetscape}`);
+        ytdlpOptions.cookies = cookiesFile;
       }
-      
-      const stream = ytdl.downloadFromInfo(info, downloadOptions);
-      const writeStream = fs.createWriteStream(filePath);
-      
-      stream.pipe(writeStream);
-      
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          stream.destroy();
-          writeStream.destroy();
-          reject(new Error('TIMEOUT'));
-        }, 5 * 60 * 1000);
-        
-        writeStream.on('finish', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
-        
-        writeStream.on('error', (err) => {
-          clearTimeout(timeout);
-          reject(err);
-        });
-        
-        stream.on('error', (err) => {
-          clearTimeout(timeout);
-          reject(err);
-        });
-      });
+
+      await youtubedl(youtubeUrl, ytdlpOptions);
+
+      if (ytdlpOptions.cookies && fs.existsSync(ytdlpOptions.cookies)) {
+        fs.unlinkSync(ytdlpOptions.cookies);
+      }
 
       const uploadingMsg = '☁️ Przesyłam na Google Drive...';
       if (isSlash) {

@@ -46,10 +46,11 @@ module.exports = {
       let videoUrl;
       let videoData;
       
-      if (play.yt_validate(query) === 'video') {
-        // Direct YouTube URL
-        const info = await play.video_info(query);
+      const validationType = play.yt_validate(query);
+      
+      if (validationType === 'video') {
         videoUrl = query;
+        const info = await play.video_info(query);
         videoData = {
           title: info.video_details.title,
           url: query,
@@ -58,9 +59,8 @@ module.exports = {
           thumbnails: info.video_details.thumbnails
         };
       } else {
-        // Search for video
         const searchResult = await play.search(query, { limit: 1 });
-        if (searchResult.length === 0) {
+        if (!searchResult || searchResult.length === 0) {
           const message = '❌ Nie znaleziono utworu!';
           if (isSlash) {
             return await interaction.followUp(message);
@@ -70,6 +70,10 @@ module.exports = {
         }
         videoUrl = searchResult[0].url;
         videoData = searchResult[0];
+      }
+
+      if (!videoUrl) {
+        throw new Error('Nie można uzyskać URL filmu');
       }
 
       const stream = await play.stream(videoUrl);
