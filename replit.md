@@ -131,8 +131,13 @@ Wymagane intenty:
 - GuildMembers
 
 ## Uruchomienie
-Bot uruchamia się przez workflow: `node index.js`
-Status: ✅ DZIAŁA (155 slash commands zarejestrowanych i załadowanych)
+Bot uruchamia się automatycznie przez workflow: `node index.js`
+
+**Status:** ✅ **GOTOWY DO UŻYCIA**
+- 155 komend załadowanych i działających
+- Event handler: `clientReady` (Discord.js 14.23.2)
+- Tempban auto-checker uruchomiony
+- Brak błędów i ostrzeżeń
 
 ### Rejestracja slash commands
 ⚠️ **WAŻNE:** Discord ma limit **100 globalnych komend**. Bot ma **155 komend**, więc używamy rejestracji **per-serwer**.
