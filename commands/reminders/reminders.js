@@ -1,19 +1,32 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'reminders',
-  description: 'Lista twoich przypomnień',
-  aliases: ['myreminders', 'listreminders'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('reminders')
+    .setDescription('Lista twoich przypomnień'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    
     if (!client.reminders || client.reminders.size === 0) {
-      return message.reply('❌ Nie masz aktywnych przypomnień!');
+      const message = '❌ Nie masz aktywnych przypomnień!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const userReminders = Array.from(client.reminders.entries())
-      .filter(([id, reminder]) => reminder.userId === message.author.id);
+      .filter(([id, reminder]) => reminder.userId === author.id);
 
     if (userReminders.length === 0) {
-      return message.reply('❌ Nie masz aktywnych przypomnień!');
+      const message = '❌ Nie masz aktywnych przypomnień!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const embed = new EmbedBuilder()
@@ -27,6 +40,10 @@ module.exports = {
       .setFooter({ text: `Aktywnych przypomnień: ${userReminders.length}` })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

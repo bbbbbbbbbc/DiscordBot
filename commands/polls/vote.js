@@ -1,28 +1,46 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'vote',
-  description: 'Szybkie głosowanie tak/nie',
-  aliases: ['yesno', 'glosowanie'],
-  async execute(message, args, client) {
-    if (args.length === 0) {
-      return message.reply('❌ Podaj pytanie do głosowania!\nPrzykład: !vote Czy lubicie pizzę?');
+  data: new SlashCommandBuilder()
+    .setName('vote')
+    .setDescription('Szybkie głosowanie tak/nie')
+    .addStringOption(option =>
+      option.setName('pytanie')
+        .setDescription('Pytanie do głosowania')
+        .setRequired(true)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
+    let question;
+    if (isSlash) {
+      question = interaction.options.getString('pytanie');
+    } else {
+      if (args.length === 0) {
+        return interaction.reply('❌ Podaj pytanie do głosowania!\nPrzykład: !vote Czy lubicie pizzę?');
+      }
+      question = args.join(' ');
     }
-
-    const question = args.join(' ');
 
     const embed = new EmbedBuilder()
       .setColor('#00FF00')
       .setTitle('🗳️ Głosowanie')
       .setDescription(`**${question}**\n\n✅ - Tak\n❌ - Nie`)
-      .setFooter({ text: `Głosowanie od ${message.author.tag}` })
+      .setFooter({ text: `Głosowanie od ${author.tag}` })
       .setTimestamp();
 
-    const voteMessage = await message.channel.send({ embeds: [embed] });
+    let voteMessage;
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+      voteMessage = await interaction.fetchReply();
+    } else {
+      voteMessage = await channel.send({ embeds: [embed] });
+      interaction.delete().catch(() => {});
+    }
 
     await voteMessage.react('✅');
     await voteMessage.react('❌');
-
-    message.delete().catch(() => {});
   },
 };

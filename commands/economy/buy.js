@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,10 +12,26 @@ function getEconomy() {
 }
 
 module.exports = {
-  name: 'buy',
-  description: 'Kup przedmiot ze sklepu',
-  aliases: ['kup'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('buy')
+    .setDescription('Kup przedmiot ze sklepu')
+    .addStringOption(option =>
+      option.setName('przedmiot')
+        .setDescription('ID przedmiotu do zakupu')
+        .setRequired(true)
+        .addChoices(
+          { name: '🍪 Ciastko (100 🪙)', value: 'cookie' },
+          { name: '☕ Kawa (150 🪙)', value: 'coffee' },
+          { name: '🍕 Pizza (300 🪙)', value: 'pizza' },
+          { name: '🏆 Trofeum (1000 🪙)', value: 'trophy' },
+          { name: '👑 Korona (5000 🪙)', value: 'crown' },
+          { name: '💎 Klejnot (10000 🪙)', value: 'gem' }
+        )
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    
     const shop = [
       { id: 'cookie', name: 'Ciastko', price: 100, emoji: '🍪' },
       { id: 'coffee', name: 'Kawa', price: 150, emoji: '☕' },
@@ -25,24 +41,40 @@ module.exports = {
       { id: 'gem', name: 'Klejnot', price: 10000, emoji: '💎' },
     ];
 
-    if (!args[0]) {
-      return message.reply('❌ Podaj ID przedmiotu! Użyj !shop aby zobaczyć dostępne przedmioty.');
+    let itemId;
+    if (isSlash) {
+      itemId = interaction.options.getString('przedmiot');
+    } else {
+      if (!args[0]) {
+        return interaction.reply('❌ Podaj ID przedmiotu! Użyj /shop aby zobaczyć dostępne przedmioty.');
+      }
+      itemId = args[0].toLowerCase();
     }
 
-    const item = shop.find(i => i.id === args[0].toLowerCase());
+    const item = shop.find(i => i.id === itemId);
     if (!item) {
-      return message.reply('❌ Nie znaleziono przedmiotu o takim ID!');
+      const message = '❌ Nie znaleziono przedmiotu o takim ID!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const economy = getEconomy();
-    if (!economy[message.author.id]) {
-      economy[message.author.id] = { balance: 0, bank: 0, inventory: [] };
+    if (!economy[author.id]) {
+      economy[author.id] = { balance: 0, bank: 0, inventory: [] };
     }
 
-    const userData = economy[message.author.id];
+    const userData = economy[author.id];
 
     if (userData.balance < item.price) {
-      return message.reply(`❌ Nie masz wystarczająco pieniędzy! Potrzebujesz ${item.price} 🪙, a masz ${userData.balance} 🪙`);
+      const message = `❌ Nie masz wystarczająco pieniędzy! Potrzebujesz ${item.price} 🪙, a masz ${userData.balance} 🪙`;
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     userData.balance -= item.price;
@@ -58,6 +90,10 @@ module.exports = {
       .addFields({ name: '💰 Pozostałe saldo', value: `${userData.balance} 🪙` })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

@@ -1,13 +1,24 @@
+const { SlashCommandBuilder } = require('discord.js');
+
 module.exports = {
-  name: 'hangman',
-  description: 'Gra w wisielca',
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('hangman')
+    .setDescription('Gra w wisielca'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
     const words = ['javascript', 'discord', 'programowanie', 'komputer', 'internet', 'muzyka', 'gra', 'zabawa', 'klawisz', 'ekran'];
     const word = words[Math.floor(Math.random() * words.length)];
-    const gameId = `hangman_${message.channel.id}`;
+    const gameId = `hangman_${channel.id}`;
 
     if (client.games.has(gameId)) {
-      return message.reply('❌ Gra już trwa na tym kanale!');
+      const message = '❌ Gra już trwa na tym kanale!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const guessed = new Set();
@@ -17,10 +28,16 @@ module.exports = {
     client.games.set(gameId, { word, guessed, mistakes });
 
     const display = word.split('').map(l => guessed.has(l) ? l : '_').join(' ');
-    message.channel.send(`🎯 **Wisielec!** Zgadnij słowo:\n\`${display}\`\nBłędy: ${mistakes}/${maxMistakes}\n\nWpisz literę aby zgadywać!`);
+    const gameMessage = `🎯 **Wisielec!** Zgadnij słowo:\n\`${display}\`\nBłędy: ${mistakes}/${maxMistakes}\n\nWpisz literę aby zgadywać!`;
+    
+    if (isSlash) {
+      await interaction.reply(gameMessage);
+    } else {
+      channel.send(gameMessage);
+    }
 
     const filter = m => !m.author.bot && m.content.length === 1 && /[a-ząćęłńóśźż]/i.test(m.content);
-    const collector = message.channel.createMessageCollector({ filter, time: 120000 });
+    const collector = channel.createMessageCollector({ filter, time: 120000 });
 
     collector.on('collect', m => {
       const game = client.games.get(gameId);
@@ -58,7 +75,7 @@ module.exports = {
     collector.on('end', () => {
       if (client.games.has(gameId)) {
         const game = client.games.get(gameId);
-        message.channel.send(`⏱️ Koniec czasu! Słowo to: **${game.word}**`);
+        channel.send(`⏱️ Koniec czasu! Słowo to: **${game.word}**`);
         client.games.delete(gameId);
       }
     });

@@ -1,22 +1,47 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'tictactoe',
-  description: 'Gra w kółko i krzyżyk',
-  aliases: ['ttt'],
-  async execute(message, args, client) {
-    const opponent = message.mentions.users.first();
-    if (!opponent || opponent.id === message.author.id) {
-      return message.reply('❌ Oznacz przeciwnika! Użyj: `!tictactoe @użytkownik`');
+  data: new SlashCommandBuilder()
+    .setName('tictactoe')
+    .setDescription('Gra w kółko i krzyżyk')
+    .addUserOption(option =>
+      option.setName('przeciwnik')
+        .setDescription('Użytkownik, z którym chcesz zagrać')
+        .setRequired(true)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
+    let opponent;
+    if (isSlash) {
+      opponent = interaction.options.getUser('przeciwnik');
+    } else {
+      opponent = interaction.mentions.users.first();
+    }
+    
+    if (!opponent || opponent.id === author.id) {
+      const message = '❌ Oznacz przeciwnika!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    const gameId = `ttt_${message.channel.id}`;
+    const gameId = `ttt_${channel.id}`;
     if (client.games.has(gameId)) {
-      return message.reply('❌ Gra już trwa na tym kanale!');
+      const message = '❌ Gra już trwa na tym kanale!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const board = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'];
-    const players = [message.author, opponent];
+    const players = [author, opponent];
     let currentPlayer = 0;
 
     client.games.set(gameId, { board, players, currentPlayer });
@@ -27,10 +52,16 @@ module.exports = {
       .setDescription(`${board[0]} ${board[1]} ${board[2]}\n${board[3]} ${board[4]} ${board[5]}\n${board[6]} ${board[7]} ${board[8]}\n\n${players[currentPlayer]} - wpisz numer (1-9)!`)
       .setFooter({ text: 'Masz 30 sekund na ruch!' });
 
-    const gameMsg = await message.channel.send({ embeds: [embed] });
+    let gameMsg;
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+      gameMsg = await interaction.fetchReply();
+    } else {
+      gameMsg = await channel.send({ embeds: [embed] });
+    }
 
     const filter = m => players.some(p => p.id === m.author.id) && !isNaN(m.content) && m.content >= 1 && m.content <= 9;
-    const collector = message.channel.createMessageCollector({ filter, time: 120000 });
+    const collector = channel.createMessageCollector({ filter, time: 120000 });
 
     collector.on('collect', async m => {
       const game = client.games.get(gameId);
@@ -80,7 +111,7 @@ module.exports = {
 
     collector.on('end', () => {
       if (client.games.has(gameId)) {
-        message.channel.send('⏱️ Gra zakończona - upłynął czas!');
+        channel.send('⏱️ Gra zakończona - upłynął czas!');
         client.games.delete(gameId);
       }
     });

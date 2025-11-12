@@ -1,7 +1,13 @@
+const { SlashCommandBuilder } = require('discord.js');
+
 module.exports = {
-  name: 'math',
-  description: 'Quiz matematyczny',
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('math')
+    .setDescription('Quiz matematyczny'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
     const operations = ['+', '-', '*'];
     const op = operations[Math.floor(Math.random() * operations.length)];
     const num1 = Math.floor(Math.random() * 50) + 1;
@@ -21,16 +27,27 @@ module.exports = {
       question = `${num1} × ${num2}`;
     }
 
-    const gameId = `math_${message.channel.id}`;
+    const gameId = `math_${channel.id}`;
     if (client.games.has(gameId)) {
-      return message.reply('❌ Quiz już trwa!');
+      const message = '❌ Quiz już trwa!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     client.games.set(gameId, { answer, startTime: Date.now() });
-    message.channel.send(`🧮 **Quiz matematyczny!**\n\nIle to: **${question}** = ?`);
+    const gameMessage = `🧮 **Quiz matematyczny!**\n\nIle to: **${question}** = ?`;
+    
+    if (isSlash) {
+      await interaction.reply(gameMessage);
+    } else {
+      channel.send(gameMessage);
+    }
 
     const filter = m => !m.author.bot && !isNaN(m.content);
-    const collector = message.channel.createMessageCollector({ filter, time: 15000, max: 1 });
+    const collector = channel.createMessageCollector({ filter, time: 15000, max: 1 });
 
     collector.on('collect', m => {
       const game = client.games.get(gameId);
@@ -47,7 +64,7 @@ module.exports = {
     collector.on('end', collected => {
       if (client.games.has(gameId)) {
         const game = client.games.get(gameId);
-        message.channel.send(`⏱️ Koniec czasu! Odpowiedź to: **${game.answer}**`);
+        channel.send(`⏱️ Koniec czasu! Odpowiedź to: **${game.answer}**`);
         client.games.delete(gameId);
       }
     });

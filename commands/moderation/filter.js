@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -15,41 +15,87 @@ function getFilter() {
 }
 
 module.exports = {
-  name: 'filter',
-  description: '[ADMIN] Zarządzaj filtrem słów',
-  aliases: ['wordfilter', 'badwords'],
-  async execute(message, args, client) {
-    if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.reply('❌ Musisz być administratorem aby użyć tej komendy!');
+  data: new SlashCommandBuilder()
+    .setName('filter')
+    .setDescription('[ADMIN] Zarządzaj filtrem słów')
+    .addStringOption(option =>
+      option.setName('akcja')
+        .setDescription('Akcja do wykonania')
+        .setRequired(false)
+        .addChoices(
+          { name: 'Dodaj słowo', value: 'add' },
+          { name: 'Usuń słowo', value: 'remove' },
+          { name: 'Pokaż listę', value: 'list' }
+        )
+    )
+    .addStringOption(option =>
+      option.setName('słowo')
+        .setDescription('Słowo do dodania/usunięcia')
+        .setRequired(false)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const member = isSlash ? interaction.member : interaction.member;
+
+    if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
+      const message = '❌ Musisz być administratorem aby użyć tej komendy!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const filter = getFilter();
 
-    if (!args[0]) {
+    let action, word;
+    if (isSlash) {
+      action = interaction.options.getString('akcja');
+      word = interaction.options.getString('słowo')?.toLowerCase();
+    } else {
+      action = args[0];
+      word = args[1]?.toLowerCase();
+    }
+
+    if (!action) {
       const embed = new EmbedBuilder()
         .setColor('#E74C3C')
         .setTitle('🚫 Filtr Słów')
         .setDescription(`**Zbanowane słowa (${filter.words.length}):**\n${filter.words.map(w => `\`${w}\``).join(', ')}`)
         .addFields(
-          { name: 'Dodaj słowo', value: '!filter add <słowo>' },
-          { name: 'Usuń słowo', value: '!filter remove <słowo>' },
-          { name: 'Lista słów', value: '!filter list' }
+          { name: 'Dodaj słowo', value: '/filter add <słowo>' },
+          { name: 'Usuń słowo', value: '/filter remove <słowo>' },
+          { name: 'Lista słów', value: '/filter list' }
         )
         .setTimestamp();
 
-      return message.reply({ embeds: [embed] });
+      if (isSlash) {
+        return await interaction.reply({ embeds: [embed] });
+      } else {
+        return interaction.reply({ embeds: [embed] });
+      }
     }
 
-    const action = args[0].toLowerCase();
-    const word = args[1]?.toLowerCase();
+    const actionLower = action.toLowerCase();
 
-    if (action === 'add' || action === 'dodaj') {
+    if (actionLower === 'add' || actionLower === 'dodaj') {
       if (!word) {
-        return message.reply('❌ Podaj słowo do dodania!');
+        const message = '❌ Podaj słowo do dodania!';
+        if (isSlash) {
+          return await interaction.reply(message);
+        } else {
+          return interaction.reply(message);
+        }
       }
 
       if (filter.words.includes(word)) {
-        return message.reply('❌ To słowo jest już w filtrze!');
+        const message = '❌ To słowo jest już w filtrze!';
+        if (isSlash) {
+          return await interaction.reply(message);
+        } else {
+          return interaction.reply(message);
+        }
       }
 
       filter.words.push(word);
@@ -61,15 +107,29 @@ module.exports = {
         .setDescription(`Słowo \`${word}\` zostało dodane do filtra`)
         .setTimestamp();
 
-      message.reply({ embeds: [embed] });
-    } else if (action === 'remove' || action === 'usuń') {
+      if (isSlash) {
+        await interaction.reply({ embeds: [embed] });
+      } else {
+        interaction.reply({ embeds: [embed] });
+      }
+    } else if (actionLower === 'remove' || actionLower === 'usuń') {
       if (!word) {
-        return message.reply('❌ Podaj słowo do usunięcia!');
+        const message = '❌ Podaj słowo do usunięcia!';
+        if (isSlash) {
+          return await interaction.reply(message);
+        } else {
+          return interaction.reply(message);
+        }
       }
 
       const index = filter.words.indexOf(word);
       if (index === -1) {
-        return message.reply('❌ To słowo nie jest w filtrze!');
+        const message = '❌ To słowo nie jest w filtrze!';
+        if (isSlash) {
+          return await interaction.reply(message);
+        } else {
+          return interaction.reply(message);
+        }
       }
 
       filter.words.splice(index, 1);
@@ -81,17 +141,30 @@ module.exports = {
         .setDescription(`Słowo \`${word}\` zostało usunięte z filtra`)
         .setTimestamp();
 
-      message.reply({ embeds: [embed] });
-    } else if (action === 'list' || action === 'lista') {
+      if (isSlash) {
+        await interaction.reply({ embeds: [embed] });
+      } else {
+        interaction.reply({ embeds: [embed] });
+      }
+    } else if (actionLower === 'list' || actionLower === 'lista') {
       const embed = new EmbedBuilder()
         .setColor('#E74C3C')
         .setTitle('🚫 Filtr Słów - Lista')
         .setDescription(`**Zbanowane słowa (${filter.words.length}):**\n\n${filter.words.map(w => `• \`${w}\``).join('\n')}`)
         .setTimestamp();
 
-      message.reply({ embeds: [embed] });
+      if (isSlash) {
+        await interaction.reply({ embeds: [embed] });
+      } else {
+        interaction.reply({ embeds: [embed] });
+      }
     } else {
-      message.reply('❌ Użyj: !filter <add/remove/list> [słowo]');
+      const message = '❌ Użyj: /filter <add/remove/list> [słowo]';
+      if (isSlash) {
+        await interaction.reply(message);
+      } else {
+        interaction.reply(message);
+      }
     }
   },
 };

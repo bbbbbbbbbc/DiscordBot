@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,11 +12,24 @@ function getEconomy() {
 }
 
 module.exports = {
-  name: 'balance',
-  description: 'Sprawdź swoje saldo',
-  aliases: ['bal', 'money', 'cash'],
-  async execute(message, args, client) {
-    const target = message.mentions.users.first() || message.author;
+  data: new SlashCommandBuilder()
+    .setName('balance')
+    .setDescription('Sprawdź swoje saldo')
+    .addUserOption(option =>
+      option.setName('użytkownik')
+        .setDescription('Użytkownik którego saldo chcesz sprawdzić')
+        .setRequired(false)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    
+    let target;
+    if (isSlash) {
+      target = interaction.options.getUser('użytkownik') || interaction.user;
+    } else {
+      target = interaction.mentions.users.first() || interaction.author;
+    }
+    
     const economy = getEconomy();
     
     if (!economy[target.id]) {
@@ -38,6 +51,10 @@ module.exports = {
       .setThumbnail(target.displayAvatarURL())
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

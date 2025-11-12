@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,11 +12,25 @@ function getStats() {
 }
 
 module.exports = {
-  name: 'userstats',
-  description: 'Statystyki użytkownika',
-  aliases: ['ustats', 'mystats'],
-  async execute(message, args, client) {
-    const target = message.mentions.users.first() || message.author;
+  data: new SlashCommandBuilder()
+    .setName('userstats')
+    .setDescription('Statystyki użytkownika')
+    .addUserOption(option =>
+      option.setName('użytkownik')
+        .setDescription('Użytkownik do sprawdzenia (opcjonalnie)')
+        .setRequired(false)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const guild = isSlash ? interaction.guild : interaction.guild;
+    
+    let target;
+    if (isSlash) {
+      target = interaction.options.getUser('użytkownik') || interaction.user;
+    } else {
+      target = interaction.mentions.users.first() || interaction.author;
+    }
+    
     const stats = getStats();
 
     if (!stats[target.id]) {
@@ -30,7 +44,7 @@ module.exports = {
     }
 
     const userData = stats[target.id];
-    const member = await message.guild.members.fetch(target.id);
+    const member = await guild.members.fetch(target.id);
 
     const joinedTimestamp = Math.floor(member.joinedTimestamp / 1000);
     const createdTimestamp = Math.floor(target.createdTimestamp / 1000);
@@ -50,6 +64,10 @@ module.exports = {
       .setFooter({ text: `ID: ${target.id}` })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

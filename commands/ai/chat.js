@@ -1,20 +1,44 @@
 const OpenAI = require('openai');
+const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'chat',
-  description: 'Rozmawiaj z AI',
-  aliases: ['ai', 'ask'],
-  async execute(message, args) {
+  data: new SlashCommandBuilder()
+    .setName('chat')
+    .setDescription('Rozmawiaj z AI')
+    .addStringOption(option =>
+      option.setName('pytanie')
+        .setDescription('Pytanie do AI')
+        .setRequired(true)
+    ),
+  async execute(interaction, args) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    
     if (!process.env.OPENAI_API_KEY) {
-      return message.reply('❌ Klucz OpenAI API nie jest skonfigurowany! Skontaktuj się z właścicielem bota.');
+      const message = '❌ Klucz OpenAI API nie jest skonfigurowany! Skontaktuj się z właścicielem bota.';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    const question = args.join(' ');
-    if (!question) {
-      return message.reply('❌ Podaj pytanie! Użyj: `!chat [pytanie]`');
+    let question;
+    if (isSlash) {
+      question = interaction.options.getString('pytanie');
+    } else {
+      question = args.join(' ');
+      if (!question) {
+        return interaction.reply('❌ Podaj pytanie! Użyj: `!chat [pytanie]`');
+      }
     }
 
-    const thinkingMsg = await message.reply('🤔 Myślę...');
+    let thinkingMsg;
+    if (isSlash) {
+      await interaction.reply('🤔 Myślę...');
+      thinkingMsg = await interaction.fetchReply();
+    } else {
+      thinkingMsg = await interaction.reply('🤔 Myślę...');
+    }
 
     try {
       const openai = new OpenAI({
@@ -32,14 +56,23 @@ module.exports = {
 
       const answer = completion.choices[0].message.content;
       
-      if (answer.length > 2000) {
-        await thinkingMsg.edit(`🤖 **AI odpowiada:**\n\n${answer.substring(0, 1997)}...`);
+      const response = answer.length > 2000 
+        ? `🤖 **AI odpowiada:**\n\n${answer.substring(0, 1997)}...`
+        : `🤖 **AI odpowiada:**\n\n${answer}`;
+      
+      if (isSlash) {
+        await interaction.editReply(response);
       } else {
-        await thinkingMsg.edit(`🤖 **AI odpowiada:**\n\n${answer}`);
+        await thinkingMsg.edit(response);
       }
     } catch (error) {
       console.error('OpenAI Error:', error);
-      await thinkingMsg.edit('❌ Wystąpił błąd podczas komunikacji z AI!');
+      const errorMsg = '❌ Wystąpił błąd podczas komunikacji z AI!';
+      if (isSlash) {
+        await interaction.editReply(errorMsg);
+      } else {
+        await thinkingMsg.edit(errorMsg);
+      }
     }
   },
 };

@@ -1,40 +1,72 @@
 const { google } = require('googleapis');
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
-  name: 'ytnotify',
-  description: 'Ustawia powiadomienia o nowych filmach na kanale YouTube',
-  async execute(message, args, client) {
-    if (!message.member.permissions.has('Administrator')) {
-      return message.reply('❌ Tylko administrator może ustawić powiadomienia!');
+  data: new SlashCommandBuilder()
+    .setName('ytnotify')
+    .setDescription('Ustawia powiadomienia o nowych filmach na kanale YouTube')
+    .addStringOption(option =>
+      option.setName('channel_id')
+        .setDescription('ID kanału YouTube')
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const member = isSlash ? interaction.member : interaction.member;
+    const guild = isSlash ? interaction.guild : interaction.guild;
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
+    if (!member.permissions.has('Administrator')) {
+      const message = '❌ Tylko administrator może ustawić powiadomienia!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    const channelId = args[0];
-    const discordChannelId = message.channel.id;
-
-    if (!channelId) {
-      return message.reply('❌ Podaj ID kanału YouTube! Użyj: `!ytnotify [ID kanału YouTube]`');
+    let channelId;
+    if (isSlash) {
+      channelId = interaction.options.getString('channel_id');
+    } else {
+      channelId = args[0];
+      if (!channelId) {
+        return interaction.reply('❌ Podaj ID kanału YouTube! Użyj: `!ytnotify [ID kanału YouTube]`');
+      }
     }
+
+    const discordChannelId = channel.id;
 
     try {
       if (!client.youtubeNotifications) {
         client.youtubeNotifications = new Map();
       }
 
-      client.youtubeNotifications.set(message.guild.id, {
+      client.youtubeNotifications.set(guild.id, {
         youtubeChannelId: channelId,
         discordChannelId: discordChannelId,
         lastVideoId: null
       });
 
-      message.reply(`✅ Powiadomienia YouTube włączone!\n📺 Kanał YT: ${channelId}\n💬 Powiadomienia na: <#${discordChannelId}>`);
+      const message = `✅ Powiadomienia YouTube włączone!\n📺 Kanał YT: ${channelId}\n💬 Powiadomienia na: <#${discordChannelId}>`;
+      if (isSlash) {
+        await interaction.reply(message);
+      } else {
+        interaction.reply(message);
+      }
 
       checkYouTubeUpdates(client);
       setInterval(() => checkYouTubeUpdates(client), 300000);
 
     } catch (error) {
       console.error('YouTube notify error:', error);
-      message.reply('❌ Wystąpił błąd podczas ustawiania powiadomień!');
+      const message = '❌ Wystąpił błąd podczas ustawiania powiadomień!';
+      if (isSlash) {
+        await interaction.reply(message);
+      } else {
+        interaction.reply(message);
+      }
     }
   },
 };

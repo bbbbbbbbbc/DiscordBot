@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,17 +12,20 @@ function getEconomy() {
 }
 
 module.exports = {
-  name: 'work',
-  description: 'Pracuj aby zarobić pieniądze',
-  aliases: ['praca'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('work')
+    .setDescription('Pracuj aby zarobić pieniądze'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    
     const economy = getEconomy();
     
-    if (!economy[message.author.id]) {
-      economy[message.author.id] = { balance: 0, bank: 0, inventory: [], lastWork: 0 };
+    if (!economy[author.id]) {
+      economy[author.id] = { balance: 0, bank: 0, inventory: [], lastWork: 0 };
     }
 
-    const userData = economy[message.author.id];
+    const userData = economy[author.id];
     const now = Date.now();
     const cooldown = 3600000;
 
@@ -30,7 +33,12 @@ module.exports = {
       const timeLeft = cooldown - (now - userData.lastWork);
       const minutes = Math.floor(timeLeft / 60000);
 
-      return message.reply(`⏰ Jesteś zmęczony! Odpocznij ${minutes} minut`);
+      const message = `⏰ Jesteś zmęczony! Odpocznij ${minutes} minut`;
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const jobs = [
@@ -58,6 +66,10 @@ module.exports = {
       .setFooter({ text: 'Możesz pracować znowu za godzinę!' })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

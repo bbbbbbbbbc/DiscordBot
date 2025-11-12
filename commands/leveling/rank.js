@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -20,11 +20,23 @@ function getXpForLevel(level) {
 }
 
 module.exports = {
-  name: 'rank',
-  description: 'Sprawdź swój poziom i XP',
-  aliases: ['level', 'lvl', 'poziom'],
-  async execute(message, args, client) {
-    const target = message.mentions.users.first() || message.author;
+  data: new SlashCommandBuilder()
+    .setName('rank')
+    .setDescription('Sprawdź swój poziom i XP')
+    .addUserOption(option =>
+      option.setName('użytkownik')
+        .setDescription('Użytkownik którego poziom chcesz sprawdzić')
+        .setRequired(false)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    
+    let target;
+    if (isSlash) {
+      target = interaction.options.getUser('użytkownik') || interaction.user;
+    } else {
+      target = interaction.mentions.users.first() || interaction.author;
+    }
     const levels = getLevels();
     
     if (!levels[target.id]) {
@@ -54,6 +66,10 @@ module.exports = {
       )
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

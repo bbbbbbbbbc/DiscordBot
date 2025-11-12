@@ -1,14 +1,23 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'memory',
-  description: 'Gra Memory - znajdź pary emoji',
-  aliases: ['mem'],
-  async execute(message, args, client) {
-    const gameId = `memory_${message.channel.id}`;
+  data: new SlashCommandBuilder()
+    .setName('memory')
+    .setDescription('Gra Memory - znajdź pary emoji'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
+    const gameId = `memory_${channel.id}`;
     
     if (client.games.has(gameId)) {
-      return message.reply('❌ Gra Memory już trwa na tym kanale!');
+      const message = '❌ Gra Memory już trwa na tym kanale!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const emojis = ['🍎', '🍌', '🍇', '🍊', '🍋', '🍉', '🍓', '🍒'];
@@ -41,31 +50,37 @@ module.exports = {
       .setColor('#FF69B4')
       .setTitle('🎴 Memory - Znajdź pary!')
       .setDescription(`Kliknij karty aby znaleźć pary emoji\n\nRuchy: ${moves}\nZnalezione pary: ${matchedPairs}/8`)
-      .setFooter({ text: `Gra: ${message.author.tag}` });
+      .setFooter({ text: `Gra: ${author.tag}` });
 
-    const msg = await message.channel.send({ embeds: [embed], components: createButtons() });
+    let msg;
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed], components: createButtons() });
+      msg = await interaction.fetchReply();
+    } else {
+      msg = await channel.send({ embeds: [embed], components: createButtons() });
+    }
 
     client.games.set(gameId, { cards, revealed, firstCard, matchedPairs, moves, msg });
 
     const collector = msg.createMessageComponentCollector({ time: 300000 });
 
-    collector.on('collect', async interaction => {
-      if (interaction.user.id !== message.author.id) {
-        return interaction.reply({ content: '❌ To nie twoja gra!', ephemeral: true });
+    collector.on('collect', async buttonInteraction => {
+      if (buttonInteraction.user.id !== author.id) {
+        return buttonInteraction.reply({ content: '❌ To nie twoja gra!', ephemeral: true });
       }
 
       const game = client.games.get(gameId);
-      const index = parseInt(interaction.customId.split('_')[1]);
+      const index = parseInt(buttonInteraction.customId.split('_')[1]);
 
       if (game.revealed[index]) {
-        return interaction.reply({ content: '❌ Ta karta jest już odkryta!', ephemeral: true });
+        return buttonInteraction.reply({ content: '❌ Ta karta jest już odkryta!', ephemeral: true });
       }
 
       game.revealed[index] = true;
 
       if (game.firstCard === null) {
         game.firstCard = index;
-        await interaction.update({ components: createButtons() });
+        await buttonInteraction.update({ components: createButtons() });
       } else {
         game.moves++;
         
@@ -77,23 +92,23 @@ module.exports = {
             .setColor('#FF69B4')
             .setTitle('🎴 Memory - Znajdź pary!')
             .setDescription(`✅ Znalazłeś parę!\n\nRuchy: ${game.moves}\nZnalezione pary: ${game.matchedPairs}/8`)
-            .setFooter({ text: `Gra: ${message.author.tag}` });
+            .setFooter({ text: `Gra: ${author.tag}` });
 
-          await interaction.update({ embeds: [updatedEmbed], components: createButtons() });
+          await buttonInteraction.update({ embeds: [updatedEmbed], components: createButtons() });
 
           if (game.matchedPairs === 8) {
             const winEmbed = new EmbedBuilder()
               .setColor('#00FF00')
               .setTitle('🎉 Wygrałeś!')
               .setDescription(`Gratulacje! Znalazłeś wszystkie pary w ${game.moves} ruchach!`)
-              .setFooter({ text: `Gra: ${message.author.tag}` });
+              .setFooter({ text: `Gra: ${author.tag}` });
             
             await msg.edit({ embeds: [winEmbed], components: [] });
             client.games.delete(gameId);
             collector.stop();
           }
         } else {
-          await interaction.update({ components: createButtons() });
+          await buttonInteraction.update({ components: createButtons() });
           
           setTimeout(async () => {
             game.revealed[game.firstCard] = false;
@@ -104,7 +119,7 @@ module.exports = {
               .setColor('#FF69B4')
               .setTitle('🎴 Memory - Znajdź pary!')
               .setDescription(`❌ Nie ma pary!\n\nRuchy: ${game.moves}\nZnalezione pary: ${game.matchedPairs}/8`)
-              .setFooter({ text: `Gra: ${message.author.tag}` });
+              .setFooter({ text: `Gra: ${author.tag}` });
 
             await msg.edit({ embeds: [updatedEmbed], components: createButtons() });
           }, 1500);

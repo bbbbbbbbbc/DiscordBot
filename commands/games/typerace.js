@@ -1,7 +1,13 @@
+const { SlashCommandBuilder } = require('discord.js');
+
 module.exports = {
-  name: 'typerace',
-  description: 'Wyścig pisania',
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('typerace')
+    .setDescription('Wyścig pisania'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
     const texts = [
       'Szybkie pisanie to bardzo przydatna umiejętność',
       'Discord bot napisany w JavaScript',
@@ -11,17 +17,28 @@ module.exports = {
     ];
 
     const text = texts[Math.floor(Math.random() * texts.length)];
-    const gameId = `type_${message.channel.id}`;
+    const gameId = `type_${channel.id}`;
 
     if (client.games.has(gameId)) {
-      return message.reply('❌ Gra już trwa na tym kanale!');
+      const message = '❌ Gra już trwa na tym kanale!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     client.games.set(gameId, { text, startTime: Date.now() });
-    message.channel.send(`⌨️ **Wyścig pisania!**\n\nPrzepisz dokładnie ten tekst:\n\`\`\`${text}\`\`\``);
+    const gameMessage = `⌨️ **Wyścig pisania!**\n\nPrzepisz dokładnie ten tekst:\n\`\`\`${text}\`\`\``;
+    
+    if (isSlash) {
+      await interaction.reply(gameMessage);
+    } else {
+      channel.send(gameMessage);
+    }
 
     const filter = m => !m.author.bot;
-    const collector = message.channel.createMessageCollector({ filter, time: 60000 });
+    const collector = channel.createMessageCollector({ filter, time: 60000 });
 
     collector.on('collect', m => {
       const game = client.games.get(gameId);
@@ -37,7 +54,7 @@ module.exports = {
 
     collector.on('end', () => {
       if (client.games.has(gameId)) {
-        message.channel.send('⏱️ Nikt nie ukończył wyścigu na czas!');
+        channel.send('⏱️ Nikt nie ukończył wyścigu na czas!');
         client.games.delete(gameId);
       }
     });

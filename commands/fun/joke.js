@@ -1,11 +1,13 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
 
 module.exports = {
-  name: 'joke',
-  description: 'Losowy żart',
-  aliases: ['dowcip', 'funny'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('joke')
+    .setDescription('Losowy żart'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    
     try {
       const response = await axios.get('https://official-joke-api.appspot.com/random_joke');
       const joke = response.data;
@@ -17,7 +19,11 @@ module.exports = {
         .setFooter({ text: 'Kliknij spoiler aby zobaczyć puentę!' })
         .setTimestamp();
 
-      message.reply({ embeds: [embed] });
+      if (isSlash) {
+        await interaction.reply({ embeds: [embed] });
+      } else {
+        interaction.reply({ embeds: [embed] });
+      }
     } catch (error) {
       const polishJokes = [
         { setup: 'Co robi informatyk w ogrodzie?', punchline: 'Grzęda w źródle!' },
@@ -35,7 +41,11 @@ module.exports = {
         .setFooter({ text: 'Kliknij spoiler aby zobaczyć puentę!' })
         .setTimestamp();
 
-      message.reply({ embeds: [embed] });
+      if (isSlash) {
+        await interaction.reply({ embeds: [embed] });
+      } else {
+        interaction.reply({ embeds: [embed] });
+      }
     }
   },
 };

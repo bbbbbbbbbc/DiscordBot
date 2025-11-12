@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -16,23 +16,50 @@ function getLevel(xp) {
 }
 
 module.exports = {
-  name: 'setxp',
-  description: '[ADMIN] Ustaw XP użytkownikowi',
-  aliases: ['setexp'],
-  async execute(message, args, client) {
-    if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.reply('❌ Musisz być administratorem aby użyć tej komendy!');
+  data: new SlashCommandBuilder()
+    .setName('setxp')
+    .setDescription('[ADMIN] Ustaw XP użytkownikowi')
+    .addUserOption(option =>
+      option.setName('użytkownik')
+        .setDescription('Użytkownik któremu chcesz ustawić XP')
+        .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option.setName('xp')
+        .setDescription('Ilość XP do ustawienia')
+        .setRequired(true)
+        .setMinValue(0)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const member = isSlash ? interaction.member : interaction.member;
+    const author = isSlash ? interaction.user : interaction.author;
+
+    if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
+      const message = '❌ Musisz być administratorem aby użyć tej komendy!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    const target = message.mentions.users.first();
-    const amount = parseInt(args[1]);
+    let target, amount;
+    if (isSlash) {
+      target = interaction.options.getUser('użytkownik');
+      amount = interaction.options.getInteger('xp');
+    } else {
+      target = interaction.mentions.users.first();
+      amount = parseInt(args[1]);
 
-    if (!target) {
-      return message.reply('❌ Oznacz użytkownika!');
-    }
+      if (!target) {
+        return interaction.reply('❌ Oznacz użytkownika!');
+      }
 
-    if (!amount || amount < 0 || isNaN(amount)) {
-      return message.reply('❌ Podaj poprawną ilość XP!');
+      if (!amount || amount < 0 || isNaN(amount)) {
+        return interaction.reply('❌ Podaj poprawną ilość XP!');
+      }
     }
 
     const levels = getLevels();
@@ -57,9 +84,13 @@ module.exports = {
         { name: 'Stare XP', value: `${oldXp} (Poziom ${oldLevel})`, inline: true },
         { name: 'Nowe XP', value: `${amount} (Poziom ${newLevel})`, inline: true }
       )
-      .setFooter({ text: `Zmienione przez ${message.author.tag}` })
+      .setFooter({ text: `Zmienione przez ${author.tag}` })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

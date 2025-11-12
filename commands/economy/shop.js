@@ -1,10 +1,12 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'shop',
-  description: 'Zobacz dostępne przedmioty w sklepie',
-  aliases: ['sklep', 'store'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('shop')
+    .setDescription('Zobacz dostępne przedmioty w sklepie'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    
     const shop = [
       { id: 'cookie', name: 'Ciastko', price: 100, emoji: '🍪', description: 'Pyszne ciastko' },
       { id: 'coffee', name: 'Kawa', price: 150, emoji: '☕', description: 'Energia na cały dzień' },
@@ -17,8 +19,8 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor('#9C27B0')
       .setTitle('🏪 Sklep')
-      .setDescription('Kup przedmioty używając !buy <id>\n\n**Dostępne przedmioty:**')
-      .setFooter({ text: 'Użyj !buy <id> aby kupić przedmiot' })
+      .setDescription('Kup przedmioty używając /buy <id>\n\n**Dostępne przedmioty:**')
+      .setFooter({ text: 'Użyj /buy <id> aby kupić przedmiot' })
       .setTimestamp();
 
     shop.forEach(item => {
@@ -29,6 +31,10 @@ module.exports = {
       });
     });
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

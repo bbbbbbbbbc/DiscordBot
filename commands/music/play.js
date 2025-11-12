@@ -1,24 +1,47 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
 const play = require('play-dl');
 
 module.exports = {
-  name: 'play',
-  description: 'Odtwórz muzykę z YouTube',
-  aliases: ['p'],
-  async execute(message, args, client) {
-    if (!message.member.voice.channel) {
-      return message.reply('❌ Musisz być na kanale głosowym!');
+  data: new SlashCommandBuilder()
+    .setName('play')
+    .setDescription('Odtwórz muzykę z YouTube')
+    .addStringOption(option =>
+      option.setName('utwór')
+        .setDescription('Link do YouTube lub nazwa utworu')
+        .setRequired(true)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const member = isSlash ? interaction.member : interaction.member;
+    const guild = isSlash ? interaction.guild : interaction.guild;
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
+    if (!member.voice.channel) {
+      const message = '❌ Musisz być na kanale głosowym!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    if (!args[0]) {
-      return message.reply('❌ Podaj link do YouTube lub nazwę utworu!');
+    let query;
+    if (isSlash) {
+      query = interaction.options.getString('utwór');
+    } else {
+      if (!args[0]) {
+        return interaction.reply('❌ Podaj link do YouTube lub nazwę utworu!');
+      }
+      query = args.join(' ');
     }
-
-    const query = args.join(' ');
 
     try {
-      await message.channel.send('🔍 Szukam utworu...');
+      if (isSlash) {
+        await interaction.reply('🔍 Szukam utworu...');
+      } else {
+        await channel.send('🔍 Szukam utworu...');
+      }
 
       let video;
       if (play.yt_validate(query) === 'video') {
@@ -26,7 +49,12 @@ module.exports = {
       } else {
         const searchResult = await play.search(query, { limit: 1 });
         if (searchResult.length === 0) {
-          return message.reply('❌ Nie znaleziono utworu!');
+          const message = '❌ Nie znaleziono utworu!';
+          if (isSlash) {
+            return await interaction.followUp(message);
+          } else {
+            return channel.send(message);
+          }
         }
         video = searchResult[0];
       }
@@ -34,9 +62,9 @@ module.exports = {
       const stream = await play.stream(video.url);
 
       const connection = joinVoiceChannel({
-        channelId: message.member.voice.channel.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator,
+        channelId: member.voice.channel.id,
+        guildId: guild.id,
+        adapterCreator: guild.voiceAdapterCreator,
       });
 
       const player = createAudioPlayer();
@@ -46,7 +74,7 @@ module.exports = {
       connection.subscribe(player);
 
       if (!client.musicQueue) client.musicQueue = new Map();
-      client.musicQueue.set(message.guild.id, { connection, player, queue: [video] });
+      client.musicQueue.set(guild.id, { connection, player, queue: [video] });
 
       const embed = new EmbedBuilder()
         .setColor('#FF0000')
@@ -59,32 +87,41 @@ module.exports = {
         .setThumbnail(video.thumbnails[0].url)
         .setTimestamp();
 
-      message.channel.send({ embeds: [embed] });
+      if (isSlash) {
+        await interaction.followUp({ embeds: [embed] });
+      } else {
+        channel.send({ embeds: [embed] });
+      }
 
       player.on(AudioPlayerStatus.Idle, () => {
-        const queue = client.musicQueue.get(message.guild.id);
+        const queue = client.musicQueue.get(guild.id);
         if (queue) {
           queue.connection.destroy();
-          client.musicQueue.delete(message.guild.id);
+          client.musicQueue.delete(guild.id);
         }
       });
 
       connection.on(VoiceConnectionStatus.Disconnected, () => {
-        client.musicQueue.delete(message.guild.id);
+        client.musicQueue.delete(guild.id);
       });
 
     } catch (error) {
       console.error(error);
       
+      let errorMessage;
       if (error.message && error.message.includes('Sign in to confirm your age')) {
-        return message.reply('❌ Ten film ma ograniczenie wieku! YouTube wymaga zalogowania dla takich filmów.\n💡 Spróbuj innego utworu bez ograniczenia wieku.');
+        errorMessage = '❌ Ten film ma ograniczenie wieku! YouTube wymaga zalogowania dla takich filmów.\n💡 Spróbuj innego utworu bez ograniczenia wieku.';
+      } else if (error.message && error.message.includes('Video unavailable')) {
+        errorMessage = '❌ Film niedostępny! Może być zablokowany w Twoim regionie lub usunięty.';
+      } else {
+        errorMessage = '❌ Wystąpił błąd podczas odtwarzania muzyki! Spróbuj innego utworu.';
       }
       
-      if (error.message && error.message.includes('Video unavailable')) {
-        return message.reply('❌ Film niedostępny! Może być zablokowany w Twoim regionie lub usunięty.');
+      if (isSlash) {
+        await interaction.followUp(errorMessage);
+      } else {
+        channel.send(errorMessage);
       }
-      
-      message.reply('❌ Wystąpił błąd podczas odtwarzania muzyki! Spróbuj innego utworu.');
     }
   },
 };

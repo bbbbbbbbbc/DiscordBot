@@ -1,7 +1,13 @@
+const { SlashCommandBuilder } = require('discord.js');
+
 module.exports = {
-  name: 'trivia',
-  description: 'Quiz wiedzy ogólnej',
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('trivia')
+    .setDescription('Quiz wiedzy ogólnej'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
     const questions = [
       { q: 'Jaka jest stolica Polski?', a: 'warszawa', opts: ['Kraków', 'Warszawa', 'Gdańsk', 'Wrocław'] },
       { q: 'Ile planet jest w Układzie Słonecznym?', a: '8', opts: ['7', '8', '9', '10'] },
@@ -11,18 +17,29 @@ module.exports = {
     ];
 
     const q = questions[Math.floor(Math.random() * questions.length)];
-    const gameId = `trivia_${message.channel.id}`;
+    const gameId = `trivia_${channel.id}`;
 
     if (client.games.has(gameId)) {
-      return message.reply('❌ Pytanie już czeka na odpowiedź!');
+      const message = '❌ Pytanie już czeka na odpowiedź!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     client.games.set(gameId, { answer: q.a });
 
-    message.channel.send(`❓ **${q.q}**\n\n${q.opts.map((o, i) => `${i + 1}. ${o}`).join('\n')}\n\nWpisz numer lub odpowiedź!`);
+    const questionMessage = `❓ **${q.q}**\n\n${q.opts.map((o, i) => `${i + 1}. ${o}`).join('\n')}\n\nWpisz numer lub odpowiedź!`;
+    
+    if (isSlash) {
+      await interaction.reply(questionMessage);
+    } else {
+      channel.send(questionMessage);
+    }
 
     const filter = m => !m.author.bot;
-    const collector = message.channel.createMessageCollector({ filter, time: 20000, max: 1 });
+    const collector = channel.createMessageCollector({ filter, time: 20000, max: 1 });
 
     collector.on('collect', m => {
       const game = client.games.get(gameId);
@@ -39,7 +56,7 @@ module.exports = {
 
     collector.on('end', collected => {
       if (client.games.has(gameId)) {
-        message.channel.send(`⏱️ Koniec czasu! Poprawna odpowiedź to: **${q.opts.find(o => o.toLowerCase() === q.a)}**`);
+        channel.send(`⏱️ Koniec czasu! Poprawna odpowiedź to: **${q.opts.find(o => o.toLowerCase() === q.a)}**`);
         client.games.delete(gameId);
       }
     });

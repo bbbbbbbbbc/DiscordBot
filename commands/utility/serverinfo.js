@@ -1,11 +1,12 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'serverinfo',
-  description: 'Informacje o serwerze',
-  aliases: ['server'],
-  async execute(message) {
-    const { guild } = message;
+  data: new SlashCommandBuilder()
+    .setName('serverinfo')
+    .setDescription('Informacje o serwerze'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const guild = isSlash ? interaction.guild : interaction.guild;
     
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
@@ -22,6 +23,10 @@ module.exports = {
       .setFooter({ text: `ID: ${guild.id}` })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

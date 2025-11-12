@@ -1,12 +1,23 @@
+const { SlashCommandBuilder } = require('discord.js');
+
 module.exports = {
-  name: 'blackjack',
-  description: 'Gra w blackjacka',
-  aliases: ['bj'],
-  async execute(message, args, client) {
-    const gameId = `bj_${message.author.id}`;
+  data: new SlashCommandBuilder()
+    .setName('blackjack')
+    .setDescription('Gra w blackjacka'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
+    const gameId = `bj_${author.id}`;
     
     if (client.games.has(gameId)) {
-      return message.reply('❌ Masz już aktywną grę w blackjacka!');
+      const message = '❌ Masz już aktywną grę w blackjacka!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const deck = createDeck();
@@ -16,10 +27,16 @@ module.exports = {
     client.games.set(gameId, { deck, playerHand, dealerHand });
 
     const playerValue = calculateHand(playerHand);
-    message.channel.send(`🃏 **Blackjack!**\n\nTwoje karty: ${playerHand.join(', ')} (${playerValue})\nKarta krupiera: ${dealerHand[0]}\n\nWpisz \`hit\` aby dobrać kartę lub \`stand\` aby się zatrzymać!`);
+    const gameMessage = `🃏 **Blackjack!**\n\nTwoje karty: ${playerHand.join(', ')} (${playerValue})\nKarta krupiera: ${dealerHand[0]}\n\nWpisz \`hit\` aby dobrać kartę lub \`stand\` aby się zatrzymać!`;
+    
+    if (isSlash) {
+      await interaction.reply(gameMessage);
+    } else {
+      channel.send(gameMessage);
+    }
 
-    const filter = m => m.author.id === message.author.id && ['hit', 'stand', 'dobierz', 'pas'].includes(m.content.toLowerCase());
-    const collector = message.channel.createMessageCollector({ filter, time: 60000 });
+    const filter = m => m.author.id === author.id && ['hit', 'stand', 'dobierz', 'pas'].includes(m.content.toLowerCase());
+    const collector = channel.createMessageCollector({ filter, time: 60000 });
 
     collector.on('collect', async m => {
       const game = client.games.get(gameId);
@@ -61,7 +78,7 @@ module.exports = {
 
     collector.on('end', () => {
       if (client.games.has(gameId)) {
-        message.channel.send('⏱️ Gra zakończona - upłynął czas!');
+        channel.send('⏱️ Gra zakończona - upłynął czas!');
         client.games.delete(gameId);
       }
     });

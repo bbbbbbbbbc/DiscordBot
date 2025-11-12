@@ -1,11 +1,13 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
 
 module.exports = {
-  name: 'cat',
-  description: 'Losowe zdjęcie kota',
-  aliases: ['kitty', 'kot'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('cat')
+    .setDescription('Losowe zdjęcie kota'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    
     try {
       const response = await axios.get('https://api.thecatapi.com/v1/images/search');
       const catImage = response.data[0].url;
@@ -16,10 +18,19 @@ module.exports = {
         .setImage(catImage)
         .setTimestamp();
 
-      message.reply({ embeds: [embed] });
+      if (isSlash) {
+        await interaction.reply({ embeds: [embed] });
+      } else {
+        interaction.reply({ embeds: [embed] });
+      }
     } catch (error) {
       console.error(error);
-      message.reply('❌ Nie udało się pobrać zdjęcia kota!');
+      const message = '❌ Nie udało się pobrać zdjęcia kota!';
+      if (isSlash) {
+        await interaction.reply(message);
+      } else {
+        interaction.reply(message);
+      }
     }
   },
 };

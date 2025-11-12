@@ -1,16 +1,36 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'remind',
-  description: 'Ustaw przypomnienie',
-  aliases: ['reminder', 'przypomnij'],
-  async execute(message, args, client) {
-    if (args.length < 2) {
-      return message.reply('❌ Użyj: !remind <czas> <wiadomość>\nPrzykład: !remind 10m Sprawdź piekarnik');
+  data: new SlashCommandBuilder()
+    .setName('remind')
+    .setDescription('Ustaw przypomnienie')
+    .addStringOption(option =>
+      option.setName('czas')
+        .setDescription('Czas przypomnienia (np. 10s, 5m, 2h, 1d)')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('wiadomość')
+        .setDescription('Treść przypomnienia')
+        .setRequired(true)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
+    let timeArg, reminderText;
+    
+    if (isSlash) {
+      timeArg = interaction.options.getString('czas').toLowerCase();
+      reminderText = interaction.options.getString('wiadomość');
+    } else {
+      if (args.length < 2) {
+        return interaction.reply('❌ Użyj: !remind <czas> <wiadomość>\nPrzykład: !remind 10m Sprawdź piekarnik');
+      }
+      timeArg = args[0].toLowerCase();
+      reminderText = args.slice(1).join(' ');
     }
-
-    const timeArg = args[0].toLowerCase();
-    const reminderText = args.slice(1).join(' ');
 
     let time = 0;
     if (timeArg.endsWith('s')) {
@@ -22,46 +42,60 @@ module.exports = {
     } else if (timeArg.endsWith('d')) {
       time = parseInt(timeArg) * 86400000;
     } else {
-      return message.reply('❌ Nieprawidłowy format czasu! Użyj: 10s, 5m, 2h, 1d');
+      const message = '❌ Nieprawidłowy format czasu! Użyj: 10s, 5m, 2h, 1d';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     if (time < 1000 || time > 2592000000) {
-      return message.reply('❌ Czas musi być między 1s a 30 dniami!');
+      const message = '❌ Czas musi być między 1s a 30 dniami!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const embed = new EmbedBuilder()
       .setColor('#00FF00')
       .setTitle('⏰ Przypomnienie ustawione!')
-      .setDescription(`Przypomnę Ci za **${args[0]}**\n\n📝 "${reminderText}"`)
-      .setFooter({ text: `Ustaw: ${message.author.tag}` })
+      .setDescription(`Przypomnę Ci za **${timeArg}**\n\n📝 "${reminderText}"`)
+      .setFooter({ text: `Ustaw: ${author.tag}` })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
 
     if (!client.reminders) client.reminders = new Map();
     
-    const reminderId = `${message.author.id}_${Date.now()}`;
+    const reminderId = `${author.id}_${Date.now()}`;
     const timeout = setTimeout(async () => {
       const reminderEmbed = new EmbedBuilder()
         .setColor('#FF6B6B')
         .setTitle('⏰ Przypomnienie!')
         .setDescription(`📝 ${reminderText}`)
-        .setFooter({ text: `Przypomnienie od ${args[0]} temu` })
+        .setFooter({ text: `Przypomnienie od ${timeArg} temu` })
         .setTimestamp();
 
       try {
-        await message.author.send({ embeds: [reminderEmbed] });
+        await author.send({ embeds: [reminderEmbed] });
       } catch {
-        message.channel.send(`${message.author} ⏰ Przypomnienie: ${reminderText}`);
+        channel.send(`${author} ⏰ Przypomnienie: ${reminderText}`);
       }
       
       client.reminders.delete(reminderId);
     }, time);
 
     client.reminders.set(reminderId, {
-      userId: message.author.id,
+      userId: author.id,
       text: reminderText,
-      time: args[0],
+      time: timeArg,
       timeout
     });
   },

@@ -1,14 +1,23 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'imagequiz',
-  description: 'Quiz rozpoznawania - co jest na obrazku',
-  aliases: ['imgquiz', 'iq'],
-  async execute(message, args, client) {
-    const gameId = `imagequiz_${message.channel.id}`;
+  data: new SlashCommandBuilder()
+    .setName('imagequiz')
+    .setDescription('Quiz rozpoznawania - co jest na obrazku'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
+    const gameId = `imagequiz_${channel.id}`;
     
     if (client.games.has(gameId)) {
-      return message.reply('❌ Quiz obrazkowy już trwa na tym kanale!');
+      const message = '❌ Quiz obrazkowy już trwa na tym kanale!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const questions = [
@@ -34,11 +43,16 @@ module.exports = {
       .setDescription(`Co jest na tym "obrazku"?\n\n${question.emoji}\n\n💡 Podpowiedź: ${question.hints[0]}`)
       .setFooter({ text: 'Wpisz odpowiedź w czacie!' });
 
-    await message.channel.send({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      await channel.send({ embeds: [embed] });
+    }
+    
     client.games.set(gameId, { question, hintIndex, attempts });
 
-    const filter = m => m.author.id === message.author.id && !m.author.bot;
-    const collector = message.channel.createMessageCollector({ filter, time: 60000 });
+    const filter = m => m.author.id === author.id && !m.author.bot;
+    const collector = channel.createMessageCollector({ filter, time: 60000 });
 
     collector.on('collect', async m => {
       const game = client.games.get(gameId);
@@ -51,9 +65,9 @@ module.exports = {
           .setColor('#00FF00')
           .setTitle('🎉 Brawo!')
           .setDescription(`Poprawna odpowiedź: **${game.question.answer}**\nOdgadłeś w ${game.attempts} próbach!`)
-          .setFooter({ text: `Gracz: ${message.author.tag}` });
+          .setFooter({ text: `Gracz: ${author.tag}` });
         
-        await message.channel.send({ embeds: [winEmbed] });
+        await channel.send({ embeds: [winEmbed] });
         client.games.delete(gameId);
         collector.stop();
       } else {
@@ -65,7 +79,7 @@ module.exports = {
             .setDescription(`To nie to! Oto kolejna podpowiedź:\n\n💡 ${game.question.hints[game.hintIndex]}`)
             .setFooter({ text: `Próba ${game.attempts}` });
           
-          await message.channel.send({ embeds: [hintEmbed] });
+          await channel.send({ embeds: [hintEmbed] });
         } else {
           await m.reply(`❌ Źle! Spróbuj ponownie. (Próba ${game.attempts})`);
         }
@@ -80,7 +94,7 @@ module.exports = {
           .setTitle('⏱️ Koniec czasu!')
           .setDescription(`Nie udało się! Odpowiedź to: **${game.question.answer}**\n${game.question.emoji}`);
         
-        message.channel.send({ embeds: [timeoutEmbed] });
+        channel.send({ embeds: [timeoutEmbed] });
         client.games.delete(gameId);
       }
     });

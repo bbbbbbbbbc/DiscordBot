@@ -1,8 +1,13 @@
+const { SlashCommandBuilder } = require('discord.js');
+
 module.exports = {
-  name: 'geography',
-  description: 'Quiz geograficzny',
-  aliases: ['geo'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('geography')
+    .setDescription('Quiz geograficzny'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
     const questions = [
       { q: 'Jaka jest stolica Francji?', a: 'paryż' },
       { q: 'Jaka jest największa pustynia na świecie?', a: 'sahara' },
@@ -14,17 +19,28 @@ module.exports = {
     ];
 
     const q = questions[Math.floor(Math.random() * questions.length)];
-    const gameId = `geo_${message.channel.id}`;
+    const gameId = `geo_${channel.id}`;
 
     if (client.games.has(gameId)) {
-      return message.reply('❌ Quiz już trwa!');
+      const message = '❌ Quiz już trwa!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     client.games.set(gameId, { answer: q.a });
-    message.channel.send(`🌍 **Quiz geograficzny!**\n\n${q.q}`);
+    const gameMessage = `🌍 **Quiz geograficzny!**\n\n${q.q}`;
+    
+    if (isSlash) {
+      await interaction.reply(gameMessage);
+    } else {
+      channel.send(gameMessage);
+    }
 
     const filter = m => !m.author.bot;
-    const collector = message.channel.createMessageCollector({ filter, time: 20000, max: 1 });
+    const collector = channel.createMessageCollector({ filter, time: 20000, max: 1 });
 
     collector.on('collect', m => {
       const game = client.games.get(gameId);
@@ -40,7 +56,7 @@ module.exports = {
     collector.on('end', collected => {
       if (client.games.has(gameId)) {
         const game = client.games.get(gameId);
-        message.channel.send(`⏱️ Koniec czasu! Odpowiedź to: **${game.answer}**`);
+        channel.send(`⏱️ Koniec czasu! Odpowiedź to: **${game.answer}**`);
         client.games.delete(gameId);
       }
     });

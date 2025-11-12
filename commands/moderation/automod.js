@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,22 +12,49 @@ function getConfig() {
 }
 
 module.exports = {
-  name: 'automod',
-  description: '[ADMIN] Włącz/wyłącz automatyczną moderację',
-  aliases: ['automoderation'],
-  async execute(message, args, client) {
-    if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.reply('❌ Musisz być administratorem aby użyć tej komendy!');
+  data: new SlashCommandBuilder()
+    .setName('automod')
+    .setDescription('[ADMIN] Włącz/wyłącz automatyczną moderację')
+    .addStringOption(option =>
+      option.setName('akcja')
+        .setDescription('Akcja do wykonania')
+        .setRequired(false)
+        .addChoices(
+          { name: 'Włącz', value: 'on' },
+          { name: 'Wyłącz', value: 'off' },
+          { name: 'Status', value: 'status' }
+        )
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const member = isSlash ? interaction.member : interaction.member;
+    const guild = isSlash ? interaction.guild : interaction.guild;
+
+    if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
+      const message = '❌ Musisz być administratorem aby użyć tej komendy!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const config = getConfig();
-    const guildId = message.guild.id;
+    const guildId = guild.id;
 
     if (!config[guildId]) {
       config[guildId] = { enabled: false, antiSpam: true, antiProfanity: true };
     }
 
-    if (!args[0]) {
+    let action;
+    if (isSlash) {
+      action = interaction.options.getString('akcja');
+    } else {
+      action = args[0];
+    }
+
+    if (!action) {
       const status = config[guildId].enabled ? '✅ Włączona' : '❌ Wyłączona';
       const embed = new EmbedBuilder()
         .setColor('#3498DB')
@@ -37,17 +64,23 @@ module.exports = {
           { name: 'Anti-Spam', value: config[guildId].antiSpam ? '✅' : '❌', inline: true },
           { name: 'Filtr Wulgaryzmów', value: config[guildId].antiProfanity ? '✅' : '❌', inline: true }
         )
-        .setDescription('Użyj: !automod <on/off>')
+        .setDescription('Użyj: /automod <on/off>')
         .setTimestamp();
 
-      return message.reply({ embeds: [embed] });
+      if (isSlash) {
+        return await interaction.reply({ embeds: [embed] });
+      } else {
+        return interaction.reply({ embeds: [embed] });
+      }
     }
 
-    const action = args[0].toLowerCase();
+    const actionLower = action.toLowerCase();
 
-    if (action === 'on' || action === 'enable' || action === 'włącz') {
-      config[guildId].enabled = true;
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    if (actionLower === 'on' || actionLower === 'enable' || actionLower === 'włącz' || actionLower === 'status') {
+      if (actionLower !== 'status') {
+        config[guildId].enabled = true;
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+      }
 
       const embed = new EmbedBuilder()
         .setColor('#00FF00')
@@ -59,8 +92,12 @@ module.exports = {
         )
         .setTimestamp();
 
-      message.reply({ embeds: [embed] });
-    } else if (action === 'off' || action === 'disable' || action === 'wyłącz') {
+      if (isSlash) {
+        await interaction.reply({ embeds: [embed] });
+      } else {
+        interaction.reply({ embeds: [embed] });
+      }
+    } else if (actionLower === 'off' || actionLower === 'disable' || actionLower === 'wyłącz') {
       config[guildId].enabled = false;
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
@@ -70,9 +107,18 @@ module.exports = {
         .setDescription('Automatyczna moderacja została wyłączona')
         .setTimestamp();
 
-      message.reply({ embeds: [embed] });
+      if (isSlash) {
+        await interaction.reply({ embeds: [embed] });
+      } else {
+        interaction.reply({ embeds: [embed] });
+      }
     } else {
-      message.reply('❌ Użyj: !automod <on/off>');
+      const message = '❌ Użyj: /automod <on/off>';
+      if (isSlash) {
+        await interaction.reply(message);
+      } else {
+        interaction.reply(message);
+      }
     }
   },
 };

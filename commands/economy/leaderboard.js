@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,10 +12,13 @@ function getEconomy() {
 }
 
 module.exports = {
-  name: 'leaderboard',
-  description: 'Ranking najbogatszych użytkowników',
-  aliases: ['lb', 'top', 'ranking'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('leaderboard')
+    .setDescription('Ranking najbogatszych użytkowników'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    
     const economy = getEconomy();
     
     const sorted = Object.entries(economy)
@@ -27,7 +30,12 @@ module.exports = {
       .slice(0, 10);
 
     if (sorted.length === 0) {
-      return message.reply('❌ Brak danych ekonomicznych!');
+      const message = '❌ Brak danych ekonomicznych!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const embed = new EmbedBuilder()
@@ -50,11 +58,15 @@ module.exports = {
 
     embed.setDescription(leaderboardText.join('\n'));
 
-    const userRank = sorted.findIndex(entry => entry.userId === message.author.id);
+    const userRank = sorted.findIndex(entry => entry.userId === author.id);
     if (userRank !== -1) {
       embed.setFooter({ text: `Twoja pozycja: #${userRank + 1}` });
     }
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,42 +12,77 @@ function getEconomy() {
 }
 
 module.exports = {
-  name: 'pay',
-  description: 'Przekaż pieniądze innemu użytkownikowi',
-  aliases: ['transfer', 'give'],
-  async execute(message, args, client) {
-    const target = message.mentions.users.first();
-    const amount = parseInt(args[1]);
+  data: new SlashCommandBuilder()
+    .setName('pay')
+    .setDescription('Przekaż pieniądze innemu użytkownikowi')
+    .addUserOption(option =>
+      option.setName('użytkownik')
+        .setDescription('Użytkownik któremu chcesz przekazać pieniądze')
+        .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option.setName('kwota')
+        .setDescription('Kwota do przekazania')
+        .setRequired(true)
+        .setMinValue(1)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
+    
+    let target, amount;
+    if (isSlash) {
+      target = interaction.options.getUser('użytkownik');
+      amount = interaction.options.getInteger('kwota');
+    } else {
+      target = interaction.mentions.users.first();
+      amount = parseInt(args[1]);
 
-    if (!target) {
-      return message.reply('❌ Oznacz użytkownika któremu chcesz przekazać pieniądze!');
+      if (!target) {
+        return interaction.reply('❌ Oznacz użytkownika któremu chcesz przekazać pieniądze!');
+      }
+
+      if (!amount || amount <= 0 || isNaN(amount)) {
+        return interaction.reply('❌ Podaj poprawną kwotę do przekazania!');
+      }
     }
 
-    if (target.id === message.author.id) {
-      return message.reply('❌ Nie możesz przekazać pieniędzy samemu sobie!');
+    if (target.id === author.id) {
+      const message = '❌ Nie możesz przekazać pieniędzy samemu sobie!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     if (target.bot) {
-      return message.reply('❌ Nie możesz przekazać pieniędzy botowi!');
-    }
-
-    if (!amount || amount <= 0 || isNaN(amount)) {
-      return message.reply('❌ Podaj poprawną kwotę do przekazania!');
+      const message = '❌ Nie możesz przekazać pieniędzy botowi!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const economy = getEconomy();
     
-    if (!economy[message.author.id]) {
-      economy[message.author.id] = { balance: 0, bank: 0, inventory: [] };
+    if (!economy[author.id]) {
+      economy[author.id] = { balance: 0, bank: 0, inventory: [] };
     }
     if (!economy[target.id]) {
       economy[target.id] = { balance: 0, bank: 0, inventory: [] };
     }
 
-    const sender = economy[message.author.id];
+    const sender = economy[author.id];
 
     if (sender.balance < amount) {
-      return message.reply(`❌ Nie masz wystarczająco pieniędzy! Masz ${sender.balance} 🪙`);
+      const message = `❌ Nie masz wystarczająco pieniędzy! Masz ${sender.balance} 🪙`;
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     sender.balance -= amount;
@@ -58,13 +93,17 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor('#4CAF50')
       .setTitle('💸 Transfer wykonany!')
-      .setDescription(`${message.author} przekazał **${amount} 🪙** dla ${target}`)
+      .setDescription(`${author} przekazał **${amount} 🪙** dla ${target}`)
       .addFields(
         { name: 'Twoje saldo', value: `${sender.balance} 🪙`, inline: true },
         { name: 'Saldo odbiorcy', value: `${economy[target.id].balance} 🪙`, inline: true }
       )
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

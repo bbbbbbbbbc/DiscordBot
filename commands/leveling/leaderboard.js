@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -16,10 +16,12 @@ function getLevel(xp) {
 }
 
 module.exports = {
-  name: 'levels',
-  description: 'Ranking poziomów użytkowników',
-  aliases: ['lvlboard', 'toplvl'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('levels')
+    .setDescription('Ranking poziomów użytkowników'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const author = isSlash ? interaction.user : interaction.author;
     const levels = getLevels();
     
     const sorted = Object.entries(levels)
@@ -32,7 +34,12 @@ module.exports = {
       .slice(0, 10);
 
     if (sorted.length === 0) {
-      return message.reply('❌ Brak danych poziomów!');
+      const message = '❌ Brak danych poziomów!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const embed = new EmbedBuilder()
@@ -55,11 +62,15 @@ module.exports = {
 
     embed.setDescription(leaderboardText.join('\n'));
 
-    const userRank = sorted.findIndex(entry => entry.userId === message.author.id);
+    const userRank = sorted.findIndex(entry => entry.userId === author.id);
     if (userRank !== -1) {
       embed.setFooter({ text: `Twoja pozycja: #${userRank + 1}` });
     }
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

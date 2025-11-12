@@ -1,25 +1,50 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'volume',
-  description: 'Ustaw głośność (1-100)',
-  aliases: ['vol'],
-  async execute(message, args, client) {
-    if (!message.member.voice.channel) {
-      return message.reply('❌ Musisz być na kanale głosowym!');
+  data: new SlashCommandBuilder()
+    .setName('volume')
+    .setDescription('Ustaw głośność (1-100)')
+    .addIntegerOption(option =>
+      option.setName('poziom')
+        .setDescription('Poziom głośności (1-100)')
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(100)
+    ),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const member = isSlash ? interaction.member : interaction.member;
+    const guild = isSlash ? interaction.guild : interaction.guild;
+    
+    if (!member.voice.channel) {
+      const message = '❌ Musisz być na kanale głosowym!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    if (!client.musicQueue || !client.musicQueue.has(message.guild.id)) {
-      return message.reply('❌ Nie gram żadnej muzyki!');
+    if (!client.musicQueue || !client.musicQueue.has(guild.id)) {
+      const message = '❌ Nie gram żadnej muzyki!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    const volume = parseInt(args[0]);
-
-    if (!volume || volume < 1 || volume > 100) {
-      return message.reply('❌ Podaj głośność od 1 do 100!');
+    let volume;
+    if (isSlash) {
+      volume = interaction.options.getInteger('poziom');
+    } else {
+      volume = parseInt(args[0]);
+      if (!volume || volume < 1 || volume > 100) {
+        return interaction.reply('❌ Podaj głośność od 1 do 100!');
+      }
     }
 
-    const queue = client.musicQueue.get(message.guild.id);
+    const queue = client.musicQueue.get(guild.id);
     
     if (queue.player.state.resource && queue.player.state.resource.volume) {
       queue.player.state.resource.volume.setVolume(volume / 100);
@@ -31,6 +56,10 @@ module.exports = {
       .setDescription(`Ustawiono głośność na **${volume}%**`)
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

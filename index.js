@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, EmbedBuilder, PermissionFlagsBits, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -24,8 +24,17 @@ for (const folder of commandFolders) {
     for (const file of commandFiles) {
       const filePath = path.join(commandsPath, file);
       const command = require(filePath);
-      if ('name' in command && 'execute' in command) {
+      
+      if ('data' in command && 'execute' in command) {
+        client.commands.set(command.data.name, command);
+        if (command.aliases) {
+          command.aliases.forEach(alias => client.commands.set(alias, command));
+        }
+      } else if ('name' in command && 'execute' in command) {
         client.commands.set(command.name, command);
+        if (command.aliases) {
+          command.aliases.forEach(alias => client.commands.set(alias, command));
+        }
       }
     }
   }
@@ -39,7 +48,41 @@ client.once('clientReady', () => {
   console.log(`👥 Użytkownicy: ${client.users.cache.size}`);
   console.log(`📊 Logowanie: WŁĄCZONE`);
   console.log('═'.repeat(50));
-  client.user.setActivity('!help - Zobacz komendy', { type: 'PLAYING' });
+  client.user.setActivity('/help - Zobacz komendy', { type: 'PLAYING' });
+});
+
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  console.log(`⚡ Slash command: /${interaction.commandName} (użytkownik: ${interaction.user.tag})`);
+
+  const command = client.commands.get(interaction.commandName);
+
+  if (!command) {
+    console.log(`❓ Nieznana slash command: /${interaction.commandName}`);
+    return;
+  }
+
+  const stats = getStats();
+  if (!stats[interaction.user.id]) {
+    stats[interaction.user.id] = { messages: 0, commands: 0 };
+  }
+  stats[interaction.user.id].commands = (stats[interaction.user.id].commands || 0) + 1;
+  fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2));
+
+  try {
+    await command.execute(interaction, [], client);
+    console.log(`✅ Slash command /${interaction.commandName} wykonana pomyślnie`);
+  } catch (error) {
+    console.error(`❌ Błąd wykonywania slash command /${interaction.commandName}:`, error);
+    
+    const errorMessage = '❌ Wystąpił błąd podczas wykonywania tej komendy!';
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({ content: errorMessage, ephemeral: true });
+    } else {
+      await interaction.reply({ content: errorMessage, ephemeral: true });
+    }
+  }
 });
 
 const levelsPath = path.join(__dirname, 'data/levels.json');

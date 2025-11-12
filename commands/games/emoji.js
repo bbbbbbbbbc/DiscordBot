@@ -1,7 +1,13 @@
+const { SlashCommandBuilder } = require('discord.js');
+
 module.exports = {
-  name: 'emoji',
-  description: 'Zgadnij co oznacza emoji',
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('emoji')
+    .setDescription('Zgadnij co oznacza emoji'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const channel = isSlash ? interaction.channel : interaction.channel;
+    
     const emojiQuiz = [
       { emoji: '🍕🇮🇹', answer: 'pizza', hint: 'Włoskie danie' },
       { emoji: '🎬🍿', answer: 'kino', hint: 'Miejsce do oglądania filmów' },
@@ -11,17 +17,28 @@ module.exports = {
     ];
 
     const q = emojiQuiz[Math.floor(Math.random() * emojiQuiz.length)];
-    const gameId = `emoji_${message.channel.id}`;
+    const gameId = `emoji_${channel.id}`;
 
     if (client.games.has(gameId)) {
-      return message.reply('❌ Gra już trwa na tym kanale!');
+      const message = '❌ Gra już trwa na tym kanale!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     client.games.set(gameId, { answer: q.answer });
-    message.channel.send(`🎯 **Zgadnij co oznacza:**\n\n${q.emoji}\n\n💡 Podpowiedź: ${q.hint}`);
+    const gameMessage = `🎯 **Zgadnij co oznacza:**\n\n${q.emoji}\n\n💡 Podpowiedź: ${q.hint}`;
+    
+    if (isSlash) {
+      await interaction.reply(gameMessage);
+    } else {
+      channel.send(gameMessage);
+    }
 
     const filter = m => !m.author.bot;
-    const collector = message.channel.createMessageCollector({ filter, time: 30000, max: 1 });
+    const collector = channel.createMessageCollector({ filter, time: 30000, max: 1 });
 
     collector.on('collect', m => {
       if (m.content.toLowerCase().includes(q.answer.toLowerCase())) {
@@ -34,7 +51,7 @@ module.exports = {
 
     collector.on('end', collected => {
       if (client.games.has(gameId)) {
-        message.channel.send(`⏱️ Koniec czasu! Odpowiedź to: **${q.answer}**`);
+        channel.send(`⏱️ Koniec czasu! Odpowiedź to: **${q.answer}**`);
         client.games.delete(gameId);
       }
     });

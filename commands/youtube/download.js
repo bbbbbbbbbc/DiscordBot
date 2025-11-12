@@ -2,24 +2,58 @@ const ytdl = require('@distube/ytdl-core');
 const fs = require('fs');
 const path = require('path');
 const { getUncachableGoogleDriveClient } = require('../../utils/googleDrive');
+const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'download',
-  description: 'Pobierz film/muzykę z YouTube i prześlij na Google Drive',
-  aliases: ['dl', 'ytdl'],
-  async execute(message, args) {
-    const url = args[0];
+  data: new SlashCommandBuilder()
+    .setName('download')
+    .setDescription('Pobierz film/muzykę z YouTube i prześlij na Google Drive')
+    .addStringOption(option =>
+      option.setName('url')
+        .setDescription('Link do YouTube')
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option.setName('format')
+        .setDescription('Format do pobrania')
+        .setRequired(false)
+        .addChoices(
+          { name: 'Wideo', value: 'video' },
+          { name: 'Audio', value: 'audio' }
+        )
+    ),
+  async execute(interaction, args) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    
+    let url, format;
+    if (isSlash) {
+      url = interaction.options.getString('url');
+      format = interaction.options.getString('format') || 'video';
+    } else {
+      url = args[0];
+      format = args[1] === 'audio' ? 'audio' : 'video';
+    }
     
     if (!url || !ytdl.validateURL(url)) {
-      return message.reply('❌ Podaj prawidłowy link do YouTube! Użyj: `!download [link YouTube]`');
+      const message = '❌ Podaj prawidłowy link do YouTube! Użyj: `!download [link YouTube]`';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    const statusMsg = await message.reply('⏳ Rozpoczynam pobieranie...');
+    let statusMsg;
+    if (isSlash) {
+      await interaction.reply('⏳ Rozpoczynam pobieranie...');
+      statusMsg = await interaction.fetchReply();
+    } else {
+      statusMsg = await interaction.reply('⏳ Rozpoczynam pobieranie...');
+    }
 
     try {
       const info = await ytdl.getInfo(url);
       const title = info.videoDetails.title.replace(/[^\w\s]/gi, '').substring(0, 50);
-      const format = args[1] === 'audio' ? 'audio' : 'video';
       
       const fileName = `${title}.${format === 'audio' ? 'mp3' : 'mp4'}`;
       const filePath = path.join(__dirname, '../../downloads', fileName);
@@ -28,7 +62,12 @@ module.exports = {
         fs.mkdirSync(path.join(__dirname, '../../downloads'), { recursive: true });
       }
 
-      await statusMsg.edit(`📥 Pobieranie: **${info.videoDetails.title}**...`);
+      const downloadingMsg = `📥 Pobieranie: **${info.videoDetails.title}**...`;
+      if (isSlash) {
+        await interaction.editReply(downloadingMsg);
+      } else {
+        await statusMsg.edit(downloadingMsg);
+      }
 
       const stream = ytdl(url, {
         quality: format === 'audio' ? 'highestaudio' : 'highest',
@@ -43,7 +82,12 @@ module.exports = {
         writeStream.on('error', reject);
       });
 
-      await statusMsg.edit('☁️ Przesyłam na Google Drive...');
+      const uploadingMsg = '☁️ Przesyłam na Google Drive...';
+      if (isSlash) {
+        await interaction.editReply(uploadingMsg);
+      } else {
+        await statusMsg.edit(uploadingMsg);
+      }
 
       const drive = await getUncachableGoogleDriveClient();
       
@@ -65,11 +109,21 @@ module.exports = {
 
       fs.unlinkSync(filePath);
 
-      await statusMsg.edit(`✅ **Gotowe!**\n\n📁 Plik: **${info.videoDetails.title}**\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`);
+      const successMsg = `✅ **Gotowe!**\n\n📁 Plik: **${info.videoDetails.title}**\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`;
+      if (isSlash) {
+        await interaction.editReply(successMsg);
+      } else {
+        await statusMsg.edit(successMsg);
+      }
 
     } catch (error) {
       console.error('Download error:', error);
-      await statusMsg.edit('❌ Wystąpił błąd podczas pobierania! Upewnij się, że link jest prawidłowy.');
+      const errorMsg = '❌ Wystąpił błąd podczas pobierania! Upewnij się, że link jest prawidłowy.';
+      if (isSlash) {
+        await interaction.editReply(errorMsg);
+      } else {
+        await statusMsg.edit(errorMsg);
+      }
     }
   },
 };

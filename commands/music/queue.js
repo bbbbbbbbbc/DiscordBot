@@ -1,18 +1,31 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'queue',
-  description: 'Pokaż kolejkę utworów',
-  aliases: ['q', 'playlist'],
-  async execute(message, args, client) {
-    if (!client.musicQueue || !client.musicQueue.has(message.guild.id)) {
-      return message.reply('❌ Kolejka jest pusta!');
+  data: new SlashCommandBuilder()
+    .setName('queue')
+    .setDescription('Pokaż kolejkę utworów'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const guild = isSlash ? interaction.guild : interaction.guild;
+    
+    if (!client.musicQueue || !client.musicQueue.has(guild.id)) {
+      const message = '❌ Kolejka jest pusta!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
-    const queue = client.musicQueue.get(message.guild.id);
+    const queue = client.musicQueue.get(guild.id);
     
     if (!queue.queue || queue.queue.length === 0) {
-      return message.reply('❌ Kolejka jest pusta!');
+      const message = '❌ Kolejka jest pusta!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const embed = new EmbedBuilder()
@@ -26,6 +39,10 @@ module.exports = {
       .setFooter({ text: `Utworów w kolejce: ${queue.queue.length}` })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

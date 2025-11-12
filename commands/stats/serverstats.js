@@ -1,11 +1,12 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  name: 'serverstats',
-  description: 'Statystyki serwera',
-  aliases: ['sstats', 'serverinfo2'],
-  async execute(message, args, client) {
-    const guild = message.guild;
+  data: new SlashCommandBuilder()
+    .setName('serverstats')
+    .setDescription('Statystyki serwera'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const guild = isSlash ? interaction.guild : interaction.guild;
 
     const totalMembers = guild.memberCount;
     const onlineMembers = guild.members.cache.filter(m => m.presence?.status !== 'offline').size;
@@ -38,6 +39,10 @@ module.exports = {
       embed.setDescription(guild.description);
     }
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };

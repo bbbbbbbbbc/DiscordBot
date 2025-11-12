@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,10 +12,13 @@ function getStats() {
 }
 
 module.exports = {
-  name: 'activity',
-  description: 'Wykres aktywności serwera',
-  aliases: ['aktywnosc', 'chart'],
-  async execute(message, args, client) {
+  data: new SlashCommandBuilder()
+    .setName('activity')
+    .setDescription('Wykres aktywności serwera'),
+  async execute(interaction, args, client) {
+    const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
+    const guild = isSlash ? interaction.guild : interaction.guild;
+    
     const stats = getStats();
     
     const topUsers = Object.entries(stats)
@@ -27,7 +30,12 @@ module.exports = {
       .slice(0, 10);
 
     if (topUsers.length === 0) {
-      return message.reply('❌ Brak danych aktywności!');
+      const message = '❌ Brak danych aktywności!';
+      if (isSlash) {
+        return await interaction.reply(message);
+      } else {
+        return interaction.reply(message);
+      }
     }
 
     const maxMessages = topUsers[0].messages;
@@ -50,9 +58,13 @@ module.exports = {
       .setColor('#E67E22')
       .setTitle('📊 Wykres Aktywności')
       .setDescription('Top 10 najbardziej aktywnych użytkowników\n\n' + activityText.join('\n\n'))
-      .setFooter({ text: `Aktywność na ${message.guild.name}` })
+      .setFooter({ text: `Aktywność na ${guild.name}` })
       .setTimestamp();
 
-    message.reply({ embeds: [embed] });
+    if (isSlash) {
+      await interaction.reply({ embeds: [embed] });
+    } else {
+      interaction.reply({ embeds: [embed] });
+    }
   },
 };
