@@ -2,15 +2,18 @@ const ytdl = require('@distube/ytdl-core');
 const fs = require('fs');
 const path = require('path');
 const { getUncachableGoogleDriveClient } = require('../../utils/googleDrive');
+const { getUncachableSpotifyClient } = require('../../utils/spotify');
+const ytSearch = require('yt-search');
 const { SlashCommandBuilder } = require('discord.js');
+const { getData } = require('spotify-url-info');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('download')
-    .setDescription('Pobierz film/muzykę z YouTube')
+    .setDescription('Pobierz muzykę/film z YouTube, Spotify i innych platform')
     .addStringOption(option =>
       option.setName('url')
-        .setDescription('Link do YouTube')
+        .setDescription('Link do YouTube, Spotify, Vimeo, SoundCloud, etc.')
         .setRequired(true)
     )
     .addStringOption(option =>
@@ -28,24 +31,14 @@ module.exports = {
     let url, format;
     if (isSlash) {
       url = interaction.options?.getString('url');
-      format = interaction.options?.getString('format') || 'video';
+      format = interaction.options?.getString('format') || 'audio';
     } else {
       url = args[0];
-      format = args[1] === 'audio' ? 'audio' : 'video';
+      format = args[1] === 'video' ? 'video' : 'audio';
     }
     
     if (!url) {
-      const message = '❌ Musisz podać URL! Użyj: `/download url:[link do YouTube]`';
-      if (isSlash) {
-        return await interaction.reply({ content: message, ephemeral: true });
-      } else {
-        return interaction.reply(message);
-      }
-    }
-    
-    // Validate YouTube URL
-    if (!ytdl.validateURL(url)) {
-      const message = '❌ To nie jest prawidłowy link do YouTube!';
+      const message = '❌ Musisz podać URL! Użyj: `/download url:[link]`';
       if (isSlash) {
         return await interaction.reply({ content: message, ephemeral: true });
       } else {
@@ -64,29 +57,76 @@ module.exports = {
     let filePath;
 
     try {
-      // Create downloads directory if it doesn't exist
       const downloadsDir = path.join(__dirname, '../../downloads');
       if (!fs.existsSync(downloadsDir)) {
         fs.mkdirSync(downloadsDir, { recursive: true });
       }
 
-      // Get video info
-      const info = await ytdl.getInfo(url);
-      const title = info.videoDetails.title.replace(/[^\w\s-]/gi, '').substring(0, 50);
+      let youtubeUrl;
+      let title;
+      let artist = '';
+
+      if (url.includes('spotify.com')) {
+        const processingMsg = '🎵 Przetwarzam link Spotify...';
+        if (isSlash) {
+          await interaction.editReply(processingMsg);
+        } else {
+          await statusMsg.edit(processingMsg);
+        }
+
+        try {
+          const spotifyData = await getData(url);
+          
+          if (spotifyData.type === 'track') {
+            title = spotifyData.name;
+            artist = spotifyData.artists?.[0]?.name || '';
+            
+            const searchQuery = artist ? `${artist} ${title}` : title;
+            const searchMsg = `🔍 Szukam na YouTube: **${searchQuery}**...`;
+            if (isSlash) {
+              await interaction.editReply(searchMsg);
+            } else {
+              await statusMsg.edit(searchMsg);
+            }
+
+            const searchResults = await ytSearch(searchQuery);
+            if (!searchResults.videos || searchResults.videos.length === 0) {
+              throw new Error('Nie znaleziono utworu na YouTube');
+            }
+            
+            youtubeUrl = searchResults.videos[0].url;
+          } else if (spotifyData.type === 'playlist' || spotifyData.type === 'album') {
+            throw new Error('Playlisty i albumy nie są obsługiwane. Podaj link do pojedynczego utworu.');
+          } else {
+            throw new Error('Nieobsługiwany typ Spotify');
+          }
+        } catch (spotifyError) {
+          console.error('Spotify error:', spotifyError);
+          throw new Error(`Błąd Spotify: ${spotifyError.message}`);
+        }
+      } else if (ytdl.validateURL(url)) {
+        youtubeUrl = url;
+      } else {
+        throw new Error('Nieobsługiwany link! Obsługiwane platformy: YouTube, Spotify');
+      }
+
+      const info = await ytdl.getInfo(youtubeUrl);
+      if (!title) {
+        title = info.videoDetails.title;
+      }
       
-      // Set file extension based on format
+      const sanitizedTitle = title.replace(/[^\w\s-]/gi, '').substring(0, 50);
       const fileExt = format === 'audio' ? 'mp3' : 'mp4';
-      const fileName = `${title}.${fileExt}`;
+      const fileName = `${sanitizedTitle}.${fileExt}`;
       filePath = path.join(downloadsDir, fileName);
 
-      const downloadingMsg = `📥 Pobieranie: **${title}**...`;
+      const downloadingMsg = `📥 Pobieranie: **${sanitizedTitle}**${artist ? ` - ${artist}` : ''}...`;
       if (isSlash) {
         await interaction.editReply(downloadingMsg);
       } else {
         await statusMsg.edit(downloadingMsg);
       }
 
-      // Choose format
       const selectedFormat = ytdl.chooseFormat(info.formats, {
         quality: format === 'audio' ? 'highestaudio' : 'highest',
         filter: format === 'audio' ? 'audioonly' : 'audioandvideo'
@@ -96,14 +136,12 @@ module.exports = {
         throw new Error('Nie znaleziono odpowiedniego formatu dla tego filmu');
       }
 
-      // Download from YouTube
       const stream = ytdl.downloadFromInfo(info, { format: selectedFormat });
       const writeStream = fs.createWriteStream(filePath);
       
       stream.pipe(writeStream);
       
       await new Promise((resolve, reject) => {
-        // Add timeout (5 minutes)
         const timeout = setTimeout(() => {
           stream.destroy();
           writeStream.destroy();
@@ -151,10 +189,10 @@ module.exports = {
         fields: 'id, name, webViewLink'
       });
 
-      // Clean up downloaded file
       fs.unlinkSync(filePath);
 
-      const successMsg = `✅ **Gotowe!**\n\n📁 Plik: **${title}**\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`;
+      const platform = url.includes('spotify.com') ? '🎵 Spotify' : '📺 YouTube';
+      const successMsg = `✅ **Gotowe!**\n\n${platform}\n📁 Plik: **${sanitizedTitle}**${artist ? `\n👤 Artysta: ${artist}` : ''}\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`;
       if (isSlash) {
         await interaction.editReply(successMsg);
       } else {
@@ -179,12 +217,15 @@ module.exports = {
           errorMsg = '❌ Film niedostępny! Może być zablokowany lub usunięty.';
         } else if (error.message.includes('No video id found')) {
           errorMsg = '❌ Nieprawidłowy link YouTube!';
+        } else if (error.message.includes('Spotify')) {
+          errorMsg = `❌ ${error.message}`;
+        } else if (error.message.includes('Nie znaleziono')) {
+          errorMsg = `❌ ${error.message}`;
         } else {
           errorMsg = `❌ Błąd: ${error.message}`;
         }
       }
       
-      // Clean up file if it exists
       if (filePath && fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
