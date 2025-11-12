@@ -79,7 +79,7 @@ module.exports = {
         await statusMsg.edit(downloadingMsg);
       }
 
-      const stream = await play.stream(url);
+      const stream = await play.stream_from_info(info);
 
       const writeStream = fs.createWriteStream(filePath);
       stream.stream.pipe(writeStream);
