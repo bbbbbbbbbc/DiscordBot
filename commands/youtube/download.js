@@ -8,10 +8,10 @@ const { SlashCommandBuilder } = require('discord.js');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('download')
-    .setDescription('Pobierz film/muzykę z YouTube i prześlij na Google Drive')
+    .setDescription('Pobierz film/muzykę z YouTube/Spotify i prześlij na Google Drive')
     .addStringOption(option =>
       option.setName('url')
-        .setDescription('Link do YouTube')
+        .setDescription('Link do YouTube lub Spotify')
         .setRequired(true)
     )
     .addStringOption(option =>
@@ -21,6 +21,18 @@ module.exports = {
         .addChoices(
           { name: 'Wideo', value: 'video' },
           { name: 'Audio', value: 'audio' }
+        )
+    )
+    .addStringOption(option =>
+      option.setName('jakość')
+        .setDescription('Jakość wideo (tylko YouTube)')
+        .setRequired(false)
+        .addChoices(
+          { name: '360p (Niska)', value: '360' },
+          { name: '480p (Średnia)', value: '480' },
+          { name: '720p (HD)', value: '720' },
+          { name: '1080p (Full HD)', value: '1080' },
+          { name: 'Najlepsza dostępna', value: 'best' }
         )
     ),
   async execute(interaction, args) {

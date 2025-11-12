@@ -19,6 +19,7 @@
     "googleapis": "^162.0.0",
     "libsodium-wrappers": "^0.7.15",
     "openai": "^6.3.0",
-    "play-dl": "^1.9.7"
+    "play-dl": "^1.9.7",
+    "spotifydl-core": "^0.2.0"
   }
 }
