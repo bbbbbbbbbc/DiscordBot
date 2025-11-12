@@ -7,7 +7,7 @@ module.exports = {
     .setName('play')
     .setDescription('Odtwórz muzykę z YouTube')
     .addStringOption(option =>
-      option.setName('utwór')
+      option.setName('utwor')
         .setDescription('Link do YouTube lub nazwa utworu')
         .setRequired(true)
     ),
@@ -28,7 +28,7 @@ module.exports = {
 
     let query;
     if (isSlash) {
-      query = interaction.options.getString('utwór');
+      query = interaction.options.getString('utwor');
     } else {
       if (!args[0]) {
         return interaction.reply('❌ Podaj link do YouTube lub nazwę utworu!');
@@ -43,10 +43,22 @@ module.exports = {
         await channel.send('🔍 Szukam utworu...');
       }
 
-      let video;
+      let videoUrl;
+      let videoData;
+      
       if (play.yt_validate(query) === 'video') {
-        video = await play.video_info(query);
+        // Direct YouTube URL
+        const info = await play.video_info(query);
+        videoUrl = query;
+        videoData = {
+          title: info.video_details.title,
+          url: query,
+          channel: { name: info.video_details.channel.name },
+          durationRaw: info.video_details.durationRaw,
+          thumbnails: info.video_details.thumbnails
+        };
       } else {
+        // Search for video
         const searchResult = await play.search(query, { limit: 1 });
         if (searchResult.length === 0) {
           const message = '❌ Nie znaleziono utworu!';
@@ -56,10 +68,11 @@ module.exports = {
             return channel.send(message);
           }
         }
-        video = searchResult[0];
+        videoUrl = searchResult[0].url;
+        videoData = searchResult[0];
       }
 
-      const stream = await play.stream(video.url);
+      const stream = await play.stream(videoUrl);
 
       const connection = joinVoiceChannel({
         channelId: member.voice.channel.id,
@@ -74,17 +87,17 @@ module.exports = {
       connection.subscribe(player);
 
       if (!client.musicQueue) client.musicQueue = new Map();
-      client.musicQueue.set(guild.id, { connection, player, queue: [video] });
+      client.musicQueue.set(guild.id, { connection, player, queue: [videoData] });
 
       const embed = new EmbedBuilder()
         .setColor('#FF0000')
         .setTitle('🎵 Teraz gra')
-        .setDescription(`[${video.title}](${video.url})`)
+        .setDescription(`[${videoData.title}](${videoData.url})`)
         .addFields(
-          { name: '👤 Kanał', value: video.channel.name, inline: true },
-          { name: '⏱️ Czas', value: video.durationRaw, inline: true }
+          { name: '👤 Kanał', value: videoData.channel.name, inline: true },
+          { name: '⏱️ Czas', value: videoData.durationRaw, inline: true }
         )
-        .setThumbnail(video.thumbnails[0].url)
+        .setThumbnail(videoData.thumbnails[0].url)
         .setTimestamp();
 
       if (isSlash) {

@@ -17,6 +17,11 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 - Komendy użytkowe
 
 ## Ostatnie zmiany
+- 2025-11-12: **Naprawa komendy /play** - naprawiono błąd "Invalid URL"
+  - Problem: nazwa opcji `utwór` (z polskim znakiem) nie była akceptowana przez Discord API
+  - Rozwiązanie: zmieniono na `utwor` (bez polskich znaków w nazwie opcji)
+  - Ujednolicono strukturę danych dla `video_info()` i `search()`
+  - Bot prawidłowo odtwarza muzykę z YouTube (linki i wyszukiwanie)
 - 2025-11-12: **Przepisanie komendy /download** - uproszczona, stabilna wersja
   - TYLKO YouTube (usunięto Spotify który wymagał API credentials)
   - Użycie @distube/ytdl-core do pobierania
