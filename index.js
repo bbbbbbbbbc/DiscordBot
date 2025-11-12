@@ -32,8 +32,13 @@ for (const folder of commandFolders) {
 }
 
 client.once('clientReady', () => {
+  console.log('═'.repeat(50));
   console.log(`✅ Bot zalogowany jako ${client.user.tag}`);
   console.log(`🎮 Załadowano ${client.commands.size} komend`);
+  console.log(`🌍 Serwery: ${client.guilds.cache.size}`);
+  console.log(`👥 Użytkownicy: ${client.users.cache.size}`);
+  console.log(`📊 Logowanie: WŁĄCZONE`);
+  console.log('═'.repeat(50));
   client.user.setActivity('!help - Zobacz komendy', { type: 'PLAYING' });
 });
 
@@ -70,6 +75,8 @@ if (!client.messageTimestamps) client.messageTimestamps = new Map();
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
+  console.log(`📨 [${message.guild?.name}] ${message.author.tag}: ${message.content}`);
+
   const automod = getAutomod();
   const guildConfig = automod[message.guild?.id];
   
@@ -80,6 +87,7 @@ client.on('messageCreate', async (message) => {
     if (guildConfig.antiProfanity) {
       for (const word of filter.words) {
         if (content.includes(word)) {
+          console.log(`🛡️ Automod: Zablokowano wulgaryzm od ${message.author.tag}`);
           await message.delete().catch(() => {});
           await message.channel.send(`${message.author} ❌ Nie używaj wulgaryzmów!`).then(msg => {
             setTimeout(() => msg.delete().catch(() => {}), 5000);
@@ -104,6 +112,7 @@ client.on('messageCreate', async (message) => {
       client.messageTimestamps.set(userId, recentMessages);
       
       if (recentMessages.length > 5) {
+        console.log(`🛡️ Anti-spam: Zablokowano spam od ${message.author.tag}`);
         await message.delete().catch(() => {});
         await message.channel.send(`${message.author} ❌ Zwolnij! Nie spamuj!`).then(msg => {
           setTimeout(() => msg.delete().catch(() => {}), 5000);
@@ -127,6 +136,7 @@ client.on('messageCreate', async (message) => {
   const newLevel = Math.floor(0.1 * Math.sqrt(levels[message.author.id].xp));
   
   if (newLevel > oldLevel) {
+    console.log(`⭐ ${message.author.tag} awansował na poziom ${newLevel}!`);
     const levelUpEmbed = new EmbedBuilder()
       .setColor('#FFD700')
       .setTitle('🎉 Awans!')
@@ -154,15 +164,21 @@ client.on('messageCreate', async (message) => {
   const command = client.commands.get(commandName) || 
                   client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
-  if (!command) return;
+  if (!command) {
+    console.log(`❓ Nieznana komenda: !${commandName}`);
+    return;
+  }
+
+  console.log(`🎮 Wykonywanie komendy: !${commandName} (użytkownik: ${message.author.tag})`);
 
   stats[message.author.id].commands = (stats[message.author.id].commands || 0) + 1;
   fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2));
 
   try {
     await command.execute(message, args, client);
+    console.log(`✅ Komenda !${commandName} wykonana pomyślnie`);
   } catch (error) {
-    console.error(`Błąd wykonywania komendy ${commandName}:`, error);
+    console.error(`❌ Błąd wykonywania komendy !${commandName}:`, error);
     message.reply('❌ Wystąpił błąd podczas wykonywania tej komendy!');
   }
 });
