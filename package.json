@@ -19,7 +19,7 @@
     "discord.js": "^14.23.2",
     "googleapis": "^162.0.0",
     "libsodium-wrappers": "^0.7.15",
-    "openai": "^6.3.0",
+    "openai": "^6.8.1",
     "play-dl": "^1.9.7",
     "spotify-url-info": "^3.2.18",
     "youtube-dl-exec": "^3.0.26",
