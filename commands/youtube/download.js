@@ -2,6 +2,8 @@ const play = require('play-dl');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { Spotify } = require('spotifydl-core');
+const spotify = new Spotify();
 const { getUncachableGoogleDriveClient } = require('../../utils/googleDrive');
 const { SlashCommandBuilder } = require('discord.js');
 
@@ -38,17 +40,19 @@ module.exports = {
   async execute(interaction, args) {
     const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
     
-    let url, format;
+    let url, format, quality;
     if (isSlash) {
       url = interaction.options?.getString('url');
       format = interaction.options?.getString('format') || 'video';
+      quality = interaction.options?.getString('jakość') || 'best';
     } else {
       url = args[0];
       format = args[1] === 'audio' ? 'audio' : 'video';
+      quality = 'best';
     }
     
     if (!url) {
-      const message = '❌ Musisz podać URL! Użyj: `/download url:[link do YouTube]`';
+      const message = '❌ Musisz podać URL! Użyj: `/download url:[link do YouTube lub Spotify]`';
       if (isSlash) {
         return await interaction.reply({ content: message, ephemeral: true });
       } else {
@@ -56,8 +60,11 @@ module.exports = {
       }
     }
     
-    if (play.yt_validate(url) !== 'video') {
-      const message = '❌ To nie jest prawidłowy link do YouTube!';
+    const isSpotify = url.includes('spotify.com');
+    const isYouTube = play.yt_validate(url) === 'video';
+    
+    if (!isSpotify && !isYouTube) {
+      const message = '❌ To nie jest prawidłowy link do YouTube ani Spotify!';
       if (isSlash) {
         return await interaction.reply({ content: message, ephemeral: true });
       } else {
@@ -74,76 +81,46 @@ module.exports = {
     }
 
     try {
-      const info = await play.video_info(url);
-      const video = info.video_details;
-      const title = video.title.replace(/[^\w\s]/gi, '').substring(0, 50);
-      
-      const fileName = `${title}.${format === 'audio' ? 'mp3' : 'mp4'}`;
-      const filePath = path.join(__dirname, '../../downloads', fileName);
+      let title, filePath, fileName;
 
       if (!fs.existsSync(path.join(__dirname, '../../downloads'))) {
         fs.mkdirSync(path.join(__dirname, '../../downloads'), { recursive: true });
       }
 
-      const downloadingMsg = `📥 Pobieranie: **${video.title}**...`;
-      if (isSlash) {
-        await interaction.editReply(downloadingMsg);
-      } else {
-        await statusMsg.edit(downloadingMsg);
-      }
+      if (isSpotify) {
+        const spotifyData = await spotify.getTrack(url);
+        title = `${spotifyData.artists[0].name} - ${spotifyData.name}`.replace(/[^\w\s-]/gi, '').substring(0, 50);
+        fileName = `${title}.mp3`;
+        filePath = path.join(__dirname, '../../downloads', fileName);
 
-      const formatsWithoutSignature = info.format.filter(f => !f.hasOwnProperty('s') && f.url);
-      
-      let selectedFormat;
-      if (format === 'audio') {
-        selectedFormat = formatsWithoutSignature.find(f => 
-          f.mimeType && f.mimeType.includes('audio/mp4')
-        );
-        if (!selectedFormat) {
-          selectedFormat = formatsWithoutSignature.find(f => 
-            f.mimeType && f.mimeType.includes('audio')
-          );
-        }
-      } else {
-        selectedFormat = formatsWithoutSignature.find(f => 
-          f.mimeType && 
-          f.mimeType.includes('video/mp4') && 
-          f.hasOwnProperty('audioChannels')
-        );
-        if (!selectedFormat) {
-          selectedFormat = formatsWithoutSignature.find(f => 
-            f.mimeType && f.mimeType.includes('video') && f.hasOwnProperty('audioChannels')
-          );
-        }
-      }
-
-      if (!selectedFormat && formatsWithoutSignature.length > 0) {
-        selectedFormat = formatsWithoutSignature[0];
-      }
-      
-      if (!selectedFormat) {
-        const errorMsg = '❌ Nie mogę pobrać tego filmu. YouTube wymaga uwierzytelnienia lub film jest niedostępny.';
+        const downloadingMsg = `📥 Pobieranie: **${spotifyData.name}** - ${spotifyData.artists[0].name}...`;
         if (isSlash) {
-          return await interaction.editReply(errorMsg);
+          await interaction.editReply(downloadingMsg);
         } else {
-          return await statusMsg.edit(errorMsg);
+          await statusMsg.edit(downloadingMsg);
         }
+
+        const buffer = await spotify.downloadTrack(url);
+        fs.writeFileSync(filePath, buffer);
+
+      } else {
+        const info = await play.video_info(url);
+        const video = info.video_details;
+        title = video.title.replace(/[^\w\s]/gi, '').substring(0, 50);
+        fileName = `${title}.mp3`;
+        filePath = path.join(__dirname, '../../downloads', fileName);
+
+        const downloadingMsg = `📥 Pobieranie: **${video.title}**...`;
+        if (isSlash) {
+          await interaction.editReply(downloadingMsg);
+        } else {
+          await statusMsg.edit(downloadingMsg);
+        }
+
+        const searchQuery = `${video.title} ${video.channel.name}`;
+        const buffer = await spotify.downloadTrack(searchQuery);
+        fs.writeFileSync(filePath, buffer);
       }
-
-      const downloadUrl = selectedFormat.url;
-
-      const writeStream = fs.createWriteStream(filePath);
-
-      await new Promise((resolve, reject) => {
-        https.get(downloadUrl, (response) => {
-          response.pipe(writeStream);
-          writeStream.on('finish', () => {
-            writeStream.close();
-            resolve();
-          });
-          writeStream.on('error', reject);
-        }).on('error', reject);
-      });
 
       const uploadingMsg = '☁️ Przesyłam na Google Drive...';
       if (isSlash) {

@@ -17,6 +17,11 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 - Komendy użytkowe
 
 ## Ostatnie zmiany
+- 2025-11-12: **Rozszerzenie komendy /download** - dodano wsparcie Spotify i wybór jakości
+  - Obsługa YouTube i Spotify (utwory)
+  - Wybór jakości: 360p, 480p, 720p, 1080p, najlepsza
+  - Użycie biblioteki spotifydl-core do lepszego pobierania
+  - Automatyczne dekodowanie YouTube signature
 - 2025-11-12: **Konwersja na slash commands** - wszystkie 58 komend przekonwertowane na nowoczesne slash commands (`/`)
   - Komendy widoczne w menu Discord
   - Pełna kompatybilność wstecz (działają też z `!`)
