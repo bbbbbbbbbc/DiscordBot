@@ -1,6 +1,7 @@
 const play = require('play-dl');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 const { getUncachableGoogleDriveClient } = require('../../utils/googleDrive');
 const { SlashCommandBuilder } = require('discord.js');
 
@@ -79,15 +80,29 @@ module.exports = {
         await statusMsg.edit(downloadingMsg);
       }
 
-      const stream = await play.stream_from_info(info);
+      let selectedFormat;
+      if (format === 'audio') {
+        selectedFormat = info.format.find(f => f.mimeType && f.mimeType.includes('audio/mp4'));
+      } else {
+        selectedFormat = info.format.find(f => f.mimeType && f.mimeType.includes('video/mp4') && f.hasOwnProperty('audioChannels'));
+      }
 
+      if (!selectedFormat) {
+        selectedFormat = info.format[0];
+      }
+
+      const downloadUrl = selectedFormat.url;
       const writeStream = fs.createWriteStream(filePath);
-      stream.stream.pipe(writeStream);
 
       await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-        stream.stream.on('error', reject);
+        https.get(downloadUrl, (response) => {
+          response.pipe(writeStream);
+          writeStream.on('finish', () => {
+            writeStream.close();
+            resolve();
+          });
+          writeStream.on('error', reject);
+        }).on('error', reject);
       });
 
       const uploadingMsg = '☁️ Przesyłam na Google Drive...';
