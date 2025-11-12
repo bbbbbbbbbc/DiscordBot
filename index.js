@@ -1,6 +1,20 @@
 const { Client, GatewayIntentBits, Collection, EmbedBuilder, PermissionFlagsBits, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const play = require('play-dl');
+
+if (process.env.YOUTUBE_COOKIES) {
+  try {
+    play.setToken({
+      youtube: {
+        cookie: process.env.YOUTUBE_COOKIES
+      }
+    });
+    console.log('✅ play-dl: YouTube cookies configured');
+  } catch (error) {
+    console.warn('⚠️ play-dl: Failed to set YouTube cookies:', error.message);
+  }
+}
 
 const client = new Client({
   intents: [

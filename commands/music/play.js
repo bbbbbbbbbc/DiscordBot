@@ -47,6 +47,7 @@ module.exports = {
       let videoData;
       
       const validationType = play.yt_validate(query);
+      console.log('DEBUG /play - query:', query, 'validationType:', validationType);
       
       if (validationType === 'video') {
         videoUrl = query;
@@ -60,6 +61,8 @@ module.exports = {
         };
       } else {
         const searchResult = await play.search(query, { limit: 1 });
+        console.log('DEBUG /play - searchResult:', searchResult ? searchResult.length : 'null', searchResult?.[0]);
+        
         if (!searchResult || searchResult.length === 0) {
           const message = '❌ Nie znaleziono utworu!';
           if (isSlash) {
@@ -68,14 +71,20 @@ module.exports = {
             return channel.send(message);
           }
         }
-        videoUrl = searchResult[0].url;
-        videoData = searchResult[0];
+        
+        const firstResult = searchResult[0];
+        videoUrl = firstResult.url;
+        videoData = firstResult;
+        
+        console.log('DEBUG /play - videoUrl:', videoUrl, 'title:', firstResult.title);
       }
 
       if (!videoUrl) {
+        console.error('DEBUG /play - videoUrl is undefined!');
         throw new Error('Nie można uzyskać URL filmu');
       }
 
+      console.log('DEBUG /play - Calling play.stream with URL:', videoUrl);
       const stream = await play.stream(videoUrl);
 
       const connection = joinVoiceChannel({

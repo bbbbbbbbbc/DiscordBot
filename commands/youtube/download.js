@@ -141,20 +141,10 @@ module.exports = {
         ytdlpOptions.mergeOutputFormat = 'mp4';
       }
 
-      if (process.env.YOUTUBE_COOKIES) {
-        const cookiesFile = path.join(downloadsDir, 'cookies.txt');
-        const cookiesNetscape = process.env.YOUTUBE_COOKIES.split(';').map(cookie => {
-          const [name, value] = cookie.trim().split('=');
-          return `.youtube.com\tTRUE\t/\tTRUE\t0\t${name.trim()}\t${value || ''}`;
-        }).join('\n');
-        fs.writeFileSync(cookiesFile, `# Netscape HTTP Cookie File\n${cookiesNetscape}`);
-        ytdlpOptions.cookies = cookiesFile;
-      }
-
       await youtubedl(youtubeUrl, ytdlpOptions);
 
-      if (ytdlpOptions.cookies && fs.existsSync(ytdlpOptions.cookies)) {
-        fs.unlinkSync(ytdlpOptions.cookies);
+      if (!fs.existsSync(filePath)) {
+        throw new Error('Pobieranie nie powiodło się - plik nie został utworzony. Film może być niedostępny lub zabezpieczony.');
       }
 
       const uploadingMsg = '☁️ Przesyłam na Google Drive...';
@@ -214,8 +204,13 @@ module.exports = {
           errorMsg = `❌ ${error.message}`;
         } else if (error.message.includes('Nie znaleziono')) {
           errorMsg = `❌ ${error.message}`;
+        } else if (error.message.includes('ffmpeg') || error.message.includes('ffprobe')) {
+          errorMsg = '❌ Błąd konwersji audio. Spróbuj ponownie.';
+        } else if (error.stderr && error.stderr.includes('cookies are no longer valid')) {
+          errorMsg = '❌ Błąd pobierania. Film może wymagać logowania lub jest niedostępny.';
         } else {
-          errorMsg = `❌ Błąd: ${error.message}`;
+          const shortMsg = error.message.substring(0, 100);
+          errorMsg = `❌ Błąd: ${shortMsg}${error.message.length > 100 ? '...' : ''}`;
         }
       }
       
