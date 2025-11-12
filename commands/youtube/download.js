@@ -2,7 +2,6 @@ const ytdl = require('@distube/ytdl-core');
 const fs = require('fs');
 const path = require('path');
 const { getUncachableGoogleDriveClient } = require('../../utils/googleDrive');
-const { getUncachableSpotifyClient } = require('../../utils/spotify');
 const ytSearch = require('yt-search');
 const { SlashCommandBuilder } = require('discord.js');
 const { getData } = require('spotify-url-info');
