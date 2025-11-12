@@ -79,7 +79,7 @@ module.exports = {
         await statusMsg.edit(downloadingMsg);
       }
 
-      const stream = await play.stream(video.url, {
+      const stream = await play.stream(url, {
         quality: format === 'audio' ? 2 : 0
       });
 
