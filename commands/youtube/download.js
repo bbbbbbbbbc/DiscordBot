@@ -109,14 +109,23 @@ module.exports = {
         throw new Error('Nieobsługiwany link! Obsługiwane platformy: YouTube, Spotify');
       }
 
-      const ytdlOptions = {};
+      let ytdlOptions = {};
       
       if (process.env.YOUTUBE_COOKIES) {
-        ytdlOptions.requestOptions = {
-          headers: {
-            'Cookie': process.env.YOUTUBE_COOKIES
-          }
-        };
+        try {
+          const cookiesArray = process.env.YOUTUBE_COOKIES.split(';').map(cookie => {
+            const [name, ...valueParts] = cookie.trim().split('=');
+            return {
+              name: name.trim(),
+              value: valueParts.join('=')
+            };
+          });
+          
+          const agent = ytdl.createAgent(cookiesArray);
+          ytdlOptions.agent = agent;
+        } catch (cookieError) {
+          console.error('Error parsing cookies:', cookieError);
+        }
       }
 
       const info = await ytdl.getInfo(youtubeUrl, ytdlOptions);
@@ -145,10 +154,12 @@ module.exports = {
         throw new Error('Nie znaleziono odpowiedniego formatu dla tego filmu');
       }
 
-      const stream = ytdl.downloadFromInfo(info, { 
-        format: selectedFormat,
-        ...ytdlOptions
-      });
+      const downloadOptions = { format: selectedFormat };
+      if (ytdlOptions.agent) {
+        downloadOptions.agent = ytdlOptions.agent;
+      }
+      
+      const stream = ytdl.downloadFromInfo(info, downloadOptions);
       const writeStream = fs.createWriteStream(filePath);
       
       stream.pipe(writeStream);

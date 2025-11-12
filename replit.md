@@ -189,7 +189,10 @@ To zaktualizuje wszystkie slash commands w Discord.
 - `/chat` / `/ask` - Rozmawiaj z AI
 
 ### 📺 YouTube (2 komendy)
-- `/download` - Pobierz film/muzykę i prześlij na Drive
+- `/download` - Pobierz film/muzykę z YouTube lub Spotify i prześlij na Drive
+  - ✅ YouTube: wszystkie filmy (także 18+ z cookies)
+  - ✅ Spotify: utwory (automatyczne wyszukanie na YouTube)
+  - Formaty: Video (mp4) lub Audio (mp3)
 - `/ytnotify` - Powiadomienia o nowych filmach
 
 ## Automatyczne funkcje
