@@ -17,6 +17,11 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 - Komendy użytkowe
 
 ## Ostatnie zmiany
+- 2025-11-12: **Konwersja na slash commands** - wszystkie 58 komend przekonwertowane na nowoczesne slash commands (`/`)
+  - Komendy widoczne w menu Discord
+  - Pełna kompatybilność wstecz (działają też z `!`)
+  - Zarejestrowano 58 komend globalnie w Discord
+  - Dodano registerCommands.js do rejestracji
 - 2025-10-11: Utworzenie pełnego bota Discord z podstawowymi funkcjami (24 komendy)
 - 2025-10-11: Rozszerzenie bota o zaawansowane funkcje (58 komend):
   - Dodano system ekonomii z wirtualną walutą
@@ -62,6 +67,7 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 ## Konfiguracja
 ### Wymagane zmienne środowiskowe:
 - `DISCORD_BOT_TOKEN` - Token bota Discord (WYMAGANE) ✅
+- `CLIENT_ID` - Application ID bota Discord (dla slash commands) ✅
 - `OPENAI_API_KEY` - Klucz OpenAI (opcjonalnie, dla AI)
 - `YOUTUBE_API_KEY` - Klucz YouTube Data API (opcjonalnie, dla powiadomień)
 
@@ -77,93 +83,97 @@ Wymagane intenty:
 
 ## Uruchomienie
 Bot uruchamia się przez workflow: `node index.js`
-Status: ✅ DZIAŁA (58 komend załadowanych)
+Status: ✅ DZIAŁA (58 slash commands zarejestrowanych i załadowanych)
+
+### Rejestracja slash commands
+Po zmianach w komendach uruchom: `node registerCommands.js`
+To zaktualizuje wszystkie slash commands w Discord.
 
 ## Wszystkie funkcje (58 komend)
 
 ### 🛡️ Moderacja (5 komend)
-- `!ban` - Banuje użytkownika
-- `!kick` - Wyrzuca użytkownika
-- `!clear` - Usuwa wiadomości
-- `!automod` - Włącz/wyłącz automoderację
-- `!filter` - Zarządzaj filtrem słów
+- `/ban` - Banuje użytkownika
+- `/kick` - Wyrzuca użytkownika
+- `/clear` - Usuwa wiadomości
+- `/automod` - Włącz/wyłącz automoderację
+- `/filter` - Zarządzaj filtrem słów
 
 ### 🎮 Gry (15 komend)
-- `!guess` - Zgadywanka liczb
-- `!dice` - Rzut kostką
-- `!rps` - Kamień, papier, nożyce
-- `!tictactoe` - Kółko i krzyżyk (2 graczy)
-- `!hangman` - Wisielec
-- `!trivia` - Quiz wiedzy
-- `!blackjack` - Blackjack
-- `!roulette` - Rosyjska ruletka
-- `!emoji` - Zgadnij emoji
-- `!typerace` - Wyścig pisania
-- `!math` - Quiz matematyczny
-- `!geography` - Quiz geograficzny
-- `!wordchain` - Łańcuch słów
-- `!memory` - Gra memory
-- `!imagequiz` - Quiz obrazkowy
+- `/guess` - Zgadywanka liczb
+- `/dice` - Rzut kostką
+- `/rps` - Kamień, papier, nożyce
+- `/tictactoe` - Kółko i krzyżyk (2 graczy)
+- `/hangman` - Wisielec
+- `/trivia` - Quiz wiedzy
+- `/blackjack` - Blackjack
+- `/roulette` - Rosyjska ruletka
+- `/emoji` - Zgadnij emoji
+- `/typerace` - Wyścig pisania
+- `/math` - Quiz matematyczny
+- `/geography` - Quiz geograficzny
+- `/wordchain` - Łańcuch słów
+- `/memory` - Gra memory
+- `/imagequiz` - Quiz obrazkowy
 
 ### 💰 Ekonomia (8 komend)
-- `!balance` - Sprawdź saldo
-- `!daily` - Dzienna nagroda
-- `!work` - Pracuj aby zarobić
-- `!shop` - Sklep z przedmiotami
-- `!buy` - Kup przedmiot
-- `!inventory` - Twój ekwipunek
-- `!pay` - Przekaż pieniądze
-- `!leaderboard` - Ranking najbogatszych
+- `/balance` - Sprawdź saldo
+- `/daily` - Dzienna nagroda
+- `/work` - Pracuj aby zarobić
+- `/shop` - Sklep z przedmiotami
+- `/buy` - Kup przedmiot
+- `/inventory` - Twój ekwipunek
+- `/pay` - Przekaż pieniądze
+- `/leaderboard` - Ranking najbogatszych
 
 ### ⭐ Poziomy (3 komendy)
-- `!rank` - Twój poziom i XP
-- `!levels` - Ranking poziomów
-- `!setxp` - (Admin) Ustaw XP użytkownika
+- `/rank` - Twój poziom i XP
+- `/levels` - Ranking poziomów
+- `/setxp` - (Admin) Ustaw XP użytkownika
 
 **System XP:** Użytkownicy automatycznie dostają 15-25 XP za każdą wiadomość
 
 ### 🎵 Muzyka (7 komend)
-- `!play` - Odtwórz muzykę z YouTube
-- `!stop` - Zatrzymaj muzykę
-- `!skip` - Pomiń utwór
-- `!queue` - Kolejka utworów
-- `!pause` - Pauza
-- `!resume` - Wznów odtwarzanie
-- `!volume` - Ustaw głośność
+- `/play` - Odtwórz muzykę z YouTube
+- `/stop` - Zatrzymaj muzykę
+- `/skip` - Pomiń utwór
+- `/queue` - Kolejka utworów
+- `/pause` - Pauza
+- `/resume` - Wznów odtwarzanie
+- `/volume` - Ustaw głośność
 
 ### ⏰ Przypomnienia (3 komendy)
-- `!remind` - Ustaw przypomnienie
-- `!timer` - Timer odliczający
-- `!reminders` - Lista przypomnień
+- `/remind` - Ustaw przypomnienie
+- `/timer` - Timer odliczający
+- `/reminders` - Lista przypomnień
 
 ### 📊 Ankiety (2 komendy)
-- `!poll` - Stwórz ankietę
-- `!vote` - Szybkie głosowanie tak/nie
+- `/poll` - Stwórz ankietę
+- `/vote` - Szybkie głosowanie tak/nie
 
 ### 😂 Rozrywka (4 komendy)
-- `!meme` - Losowy mem
-- `!cat` - Zdjęcie kota
-- `!dog` - Zdjęcie psa
-- `!joke` - Losowy żart
+- `/meme` - Losowy mem
+- `/cat` - Zdjęcie kota
+- `/dog` - Zdjęcie psa
+- `/joke` - Losowy żart
 
 ### 📈 Statystyki (3 komendy)
-- `!serverstats` - Statystyki serwera
-- `!userstats` - Statystyki użytkownika
-- `!activity` - Wykres aktywności
+- `/serverstats` - Statystyki serwera
+- `/userstats` - Statystyki użytkownika
+- `/activity` - Wykres aktywności
 
 ### 📊 Użytkowe (5 komend)
-- `!ping` - Opóźnienie bota
-- `!serverinfo` - Info o serwerze
-- `!avatar` - Avatar użytkownika
-- `!userinfo` - Info o użytkowniku
-- `!help` - Lista wszystkich komend
+- `/ping` - Opóźnienie bota
+- `/serverinfo` - Info o serwerze
+- `/avatar` - Avatar użytkownika
+- `/userinfo` - Info o użytkowniku
+- `/help` - Lista wszystkich komend
 
 ### 🤖 AI (1 komenda)
-- `!chat` / `!ask` - Rozmawiaj z AI
+- `/chat` / `/ask` - Rozmawiaj z AI
 
 ### 📺 YouTube (2 komendy)
-- `!download` - Pobierz film/muzykę i prześlij na Drive
-- `!ytnotify` - Powiadomienia o nowych filmach
+- `/download` - Pobierz film/muzykę i prześlij na Drive
+- `/ytnotify` - Powiadomienia o nowych filmach
 
 ## Automatyczne funkcje
 - **System XP:** Automatyczne przyznawanie 15-25 XP za wiadomość

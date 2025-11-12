@@ -1,92 +1,94 @@
 # 🤖 Wielofunkcyjny Bot Discord
 
-Zaawansowany bot Discord z 58 komendami w 13 kategoriach!
+Zaawansowany bot Discord z **58 slash commands** (`/`) w 13 kategoriach!
 
 ## 🚀 Wszystkie Funkcje (58 Komend)
 
+> **Nowość!** Bot używa nowoczesnych **slash commands** - wszystkie komendy widoczne w menu Discord!
+
 ### 🛡️ Moderacja (5 komend)
-- `!ban @użytkownik [powód]` - Banuje użytkownika
-- `!kick @użytkownik [powód]` - Wyrzuca użytkownika
-- `!clear [liczba]` - Usuwa wiadomości (1-100)
-- `!automod [on/off]` - Włącz/wyłącz automatyczną moderację
-- `!filter [add/remove/list] [słowo]` - Zarządzaj filtrem słów
+- `/ban @użytkownik [powód]` - Banuje użytkownika
+- `/kick @użytkownik [powód]` - Wyrzuca użytkownika
+- `/clear [liczba]` - Usuwa wiadomości (1-100)
+- `/automod [on/off]` - Włącz/wyłącz automatyczną moderację
+- `/filter [action] [słowo]` - Zarządzaj filtrem słów
 
 ### 🎮 Gry (15 komend)
-- `!guess` - Zgadywanka liczb (1-100)
-- `!dice [ściany]` - Rzut kostką
-- `!rps [kamień/papier/nożyce]` - Kamień, papier, nożyce
-- `!tictactoe @przeciwnik` - Kółko i krzyżyk
-- `!hangman` - Wisielec
-- `!trivia` - Quiz wiedzy ogólnej
-- `!blackjack` - Gra w blackjacka
-- `!roulette` - Rosyjska ruletka
-- `!emoji` - Zgadnij co oznacza emoji
-- `!typerace` - Wyścig pisania
-- `!math` - Quiz matematyczny
-- `!geography` - Quiz geograficzny
-- `!wordchain` - Łańcuch słów
-- `!memory` - Gra memory z emoji
-- `!imagequiz` - Quiz rozpoznawania obrazków
+- `/guess` - Zgadywanka liczb (1-100)
+- `/dice [ściany]` - Rzut kostką
+- `/rps [kamień/papier/nożyce]` - Kamień, papier, nożyce
+- `/tictactoe @przeciwnik` - Kółko i krzyżyk
+- `/hangman` - Wisielec
+- `/trivia` - Quiz wiedzy ogólnej
+- `/blackjack` - Gra w blackjacka
+- `/roulette` - Rosyjska ruletka
+- `/emoji` - Zgadnij co oznacza emoji
+- `/typerace` - Wyścig pisania
+- `/math` - Quiz matematyczny
+- `/geography` - Quiz geograficzny
+- `/wordchain` - Łańcuch słów
+- `/memory` - Gra memory z emoji
+- `/imagequiz` - Quiz rozpoznawania obrazków
 
 ### 💰 Ekonomia (8 komend)
-- `!balance [@użytkownik]` - Sprawdź saldo portfela i banku
-- `!daily` - Odbierz codzienną nagrodę (24h cooldown)
-- `!work` - Pracuj aby zarobić pieniądze
-- `!shop` - Wyświetl sklep z przedmiotami
-- `!buy [nazwa]` - Kup przedmiot ze sklepu
-- `!inventory [@użytkownik]` - Zobacz ekwipunek
-- `!pay @użytkownik [kwota]` - Przekaż pieniądze innemu użytkownikowi
-- `!leaderboard` - Ranking najbogatszych użytkowników
+- `/balance [@użytkownik]` - Sprawdź saldo portfela i banku
+- `/daily` - Odbierz codzienną nagrodę (24h cooldown)
+- `/work` - Pracuj aby zarobić pieniądze
+- `/shop` - Wyświetl sklep z przedmiotami
+- `/buy [nazwa]` - Kup przedmiot ze sklepu
+- `/inventory [@użytkownik]` - Zobacz ekwipunek
+- `/pay @użytkownik [kwota]` - Przekaż pieniądze innemu użytkownikowi
+- `/leaderboard` - Ranking najbogatszych użytkowników
 
 ### ⭐ System Poziomów (3 komendy)
-- `!rank [@użytkownik]` - Zobacz poziom, XP i pasek postępu
-- `!levels` - Ranking poziomów
-- `!setxp @użytkownik [xp]` - (Admin) Ustaw XP użytkownika
+- `/rank [@użytkownik]` - Zobacz poziom, XP i pasek postępu
+- `/levels` - Ranking poziomów
+- `/setxp @użytkownik [xp]` - (Admin) Ustaw XP użytkownika
 
 **Automatyczny system XP:** Użytkownicy dostają 15-25 XP za każdą wiadomość!
 
 ### 🎵 Muzyka (7 komend)
-- `!play [link/zapytanie]` - Odtwórz muzykę z YouTube
-- `!stop` - Zatrzymaj muzykę i opuść kanał głosowy
-- `!skip` - Pomiń aktualny utwór
-- `!queue` - Pokaż kolejkę utworów
-- `!pause` - Wstrzymaj odtwarzanie
-- `!resume` - Wznów odtwarzanie
-- `!volume [1-100]` - Ustaw głośność
+- `/play [link/zapytanie]` - Odtwórz muzykę z YouTube
+- `/stop` - Zatrzymaj muzykę i opuść kanał głosowy
+- `/skip` - Pomiń aktualny utwór
+- `/queue` - Pokaż kolejkę utworów
+- `/pause` - Wstrzymaj odtwarzanie
+- `/resume` - Wznów odtwarzanie
+- `/volume [1-100]` - Ustaw głośność
 
 ### ⏰ Przypomnienia (3 komendy)
-- `!remind [czas] [wiadomość]` - Ustaw przypomnienie (np. 10m, 2h, 1d)
-- `!timer [czas]` - Timer odliczający z aktualizacją co sekundę
-- `!reminders` - Lista aktywnych przypomnień
+- `/remind [czas] [wiadomość]` - Ustaw przypomnienie (np. 10m, 2h, 1d)
+- `/timer [czas]` - Timer odliczający z aktualizacją co sekundę
+- `/reminders` - Lista aktywnych przypomnień
 
 ### 📊 Ankiety (2 komendy)
-- `!poll [pytanie] | [opcja1] | [opcja2] ...` - Stwórz ankietę (max 10 opcji)
-- `!vote [pytanie]` - Szybkie głosowanie TAK/NIE
+- `/poll [pytanie] | [opcja1] | [opcja2] ...` - Stwórz ankietę (max 10 opcji)
+- `/vote [pytanie]` - Szybkie głosowanie TAK/NIE
 
 ### 😂 Rozrywka (4 komendy)
-- `!meme` - Losowy mem z Reddit
-- `!cat` - Losowe zdjęcie kota
-- `!dog` - Losowe zdjęcie psa
-- `!joke` - Losowy żart
+- `/meme` - Losowy mem z Reddit
+- `/cat` - Losowe zdjęcie kota
+- `/dog` - Losowe zdjęcie psa
+- `/joke` - Losowy żart
 
 ### 📈 Statystyki (3 komendy)
-- `!serverstats` - Statystyki serwera (członkowie, kanały, role)
-- `!userstats [@użytkownik]` - Statystyki użytkownika (wiadomości, komendy)
-- `!activity` - Wykres aktywności (top 10 użytkowników)
+- `/serverstats` - Statystyki serwera (członkowie, kanały, role)
+- `/userstats [@użytkownik]` - Statystyki użytkownika (wiadomości, komendy)
+- `/activity` - Wykres aktywności (top 10 użytkowników)
 
 ### 📊 Użytkowe (5 komend)
-- `!ping` - Sprawdź opóźnienie bota
-- `!serverinfo` - Szczegółowe informacje o serwerze
-- `!avatar [@użytkownik]` - Pokaż avatar użytkownika
-- `!userinfo [@użytkownik]` - Informacje o użytkowniku
-- `!help` - Lista wszystkich komend
+- `/ping` - Sprawdź opóźnienie bota
+- `/serverinfo` - Szczegółowe informacje o serwerze
+- `/avatar [@użytkownik]` - Pokaż avatar użytkownika
+- `/userinfo [@użytkownik]` - Informacje o użytkowniku
+- `/help` - Lista wszystkich komend
 
 ### 🤖 AI (1 komenda)
-- `!chat [pytanie]` / `!ask [pytanie]` - Rozmawiaj z AI (wymaga OpenAI API)
+- `/chat [pytanie]` / `/ask [pytanie]` - Rozmawiaj z AI (wymaga OpenAI API)
 
 ### 📺 YouTube (2 komendy)
-- `!download [link]` - Pobierz film/muzykę z YouTube i prześlij na Google Drive
-- `!ytnotify [ID kanału]` - Ustaw powiadomienia o nowych filmach
+- `/download [link]` - Pobierz film/muzykę z YouTube i prześlij na Google Drive
+- `/ytnotify [ID kanału]` - Ustaw powiadomienia o nowych filmach
 
 ## 🔥 Automatyczne Funkcje
 
@@ -240,4 +242,4 @@ Jeśli masz pytania lub problemy:
 
 ---
 
-**Bot gotowy do użycia! Wpisz `!help` na serwerze Discord aby rozpocząć zabawę! 🎉**
+**Bot gotowy do użycia! Wpisz `/help` na serwerze Discord aby rozpocząć zabawę! 🎉**
