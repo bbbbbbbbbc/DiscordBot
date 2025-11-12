@@ -28,7 +28,7 @@ const client = new Client({
 client.commands = new Collection();
 client.games = new Map();
 
-const commandFolders = ['moderation', 'games', 'utility', 'ai', 'youtube', 'economy', 'leveling', 'music', 'reminders', 'polls', 'fun', 'stats'];
+const commandFolders = ['moderation', 'games', 'utility', 'ai', 'youtube', 'economy', 'leveling', 'music', 'reminders', 'polls', 'fun', 'stats', 'social', 'misc'];
 
 for (const folder of commandFolders) {
   const commandsPath = path.join(__dirname, 'commands', folder);
@@ -37,18 +37,24 @@ for (const folder of commandFolders) {
     
     for (const file of commandFiles) {
       const filePath = path.join(commandsPath, file);
-      const command = require(filePath);
-      
-      if ('data' in command && 'execute' in command) {
-        client.commands.set(command.data.name, command);
-        if (command.aliases) {
-          command.aliases.forEach(alias => client.commands.set(alias, command));
+      try {
+        const command = require(filePath);
+        
+        if ('data' in command && 'execute' in command) {
+          client.commands.set(command.data.name, command);
+          if (command.aliases) {
+            command.aliases.forEach(alias => client.commands.set(alias, command));
+          }
+        } else if ('name' in command && 'execute' in command) {
+          client.commands.set(command.name, command);
+          if (command.aliases) {
+            command.aliases.forEach(alias => client.commands.set(alias, command));
+          }
+        } else {
+          console.warn(`⚠️ Komenda ${folder}/${file} nie ma wymaganych właściwości (data/name i execute)`);
         }
-      } else if ('name' in command && 'execute' in command) {
-        client.commands.set(command.name, command);
-        if (command.aliases) {
-          command.aliases.forEach(alias => client.commands.set(alias, command));
-        }
+      } catch (error) {
+        console.error(`❌ Błąd ładowania komendy ${folder}/${file}:`, error.message);
       }
     }
   }
@@ -63,6 +69,39 @@ client.once('clientReady', () => {
   console.log(`📊 Logowanie: WŁĄCZONE`);
   console.log('═'.repeat(50));
   client.user.setActivity('/help - Zobacz komendy', { type: 'PLAYING' });
+  
+  setInterval(async () => {
+    try {
+      const tempbans = getTempbans();
+      const now = Date.now();
+      const remainingBans = [];
+      
+      for (const ban of tempbans) {
+        if (now >= ban.unbanTime) {
+          try {
+            const guild = client.guilds.cache.get(ban.guildId);
+            if (guild) {
+              await guild.members.unban(ban.userId, 'Ban czasowy wygasł');
+              console.log(`⏰ Automatyczne odbanowanie: ${ban.userTag} na serwerze ${guild.name}`);
+            }
+          } catch (error) {
+            console.error(`❌ Błąd podczas automatycznego odbanowania ${ban.userTag}:`, error.message);
+            if (error.code !== 10026) {
+              remainingBans.push(ban);
+            }
+          }
+        } else {
+          remainingBans.push(ban);
+        }
+      }
+      
+      if (remainingBans.length !== tempbans.length) {
+        saveTempbans(remainingBans);
+      }
+    } catch (error) {
+      console.error('❌ Błąd w sprawdzaniu tempbanów:', error);
+    }
+  }, 60000);
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -103,10 +142,22 @@ const levelsPath = path.join(__dirname, 'data/levels.json');
 const statsPath = path.join(__dirname, 'data/stats.json');
 const automodPath = path.join(__dirname, 'data/automod.json');
 const filterPath = path.join(__dirname, 'data/filter.json');
+const tempbansPath = path.join(__dirname, 'data/tempbans.json');
 
 function getLevels() {
   if (!fs.existsSync(levelsPath)) fs.writeFileSync(levelsPath, '{}');
   return JSON.parse(fs.readFileSync(levelsPath, 'utf8'));
+}
+
+function getTempbans() {
+  if (!fs.existsSync(tempbansPath)) {
+    fs.writeFileSync(tempbansPath, JSON.stringify([], null, 2));
+  }
+  return JSON.parse(fs.readFileSync(tempbansPath, 'utf8'));
+}
+
+function saveTempbans(tempbans) {
+  fs.writeFileSync(tempbansPath, JSON.stringify(tempbans, null, 2));
 }
 
 function getStats() {

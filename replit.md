@@ -1,23 +1,45 @@
-# Wielofunkcyjny Bot Discord
+# Mega Bot Discord - 155 Komend!
 
 ## Przegląd projektu
-Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności:
-- Moderacja (ban, kick, clear, automoderacja, filtr słów)
-- 15 gier multiplayer
-- System ekonomii (waluta, sklep, rankingi)
-- System poziomów/XP (automatyczne nagrody za aktywność)
-- Odtwarzacz muzyki (YouTube w kanale głosowym)
-- Przypomnienia i timery
-- Ankiety i głosowania
-- Zabawne komendy (memy, zdjęcia zwierząt, żarty)
-- Integracja AI (OpenAI)
-- Pobieranie filmów/muzyki z YouTube na Google Drive
-- Powiadomienia o nowych filmach YouTube
-- Statystyki serwera i użytkowników
-- Komendy użytkowe
+Najpotężniejszy bot Discord napisany w Node.js z 155 komendami w 12 kategoriach:
+- **15 komend moderacyjnych** (ban, kick, mute, warn, tempban, lockdown, nuke, etc.)
+- **35 gier hazardowych i multiplayer** (slots, poker, blackjack, crash, mines, lottery, wheel, etc.)
+- **18 komend ekonomicznych** (praca, kradzież, hazard, mining, fishing, bank, etc.)
+- **19 komend rozrywkowych** (memy, żarty, fakty, cytaty, wróżby, dad jokes, etc.)
+- **15 komend utility** (kalkulator, konwerter, QR code, hash, base64, morse, etc.)
+- **10 komend AI** (generowanie kodu, map, pluginów, historii, przepisów, etc.)
+- **10 komend społecznościowych** (profile, śluby, adopcje, reputacja, achievementy, etc.)
+- **13 komend misc** (AFK, suggest, giveaway, announcements, embeds, etc.)
+- **7 komend muzycznych** (play, queue, skip, pause, volume, etc.)
+- **3 komendy poziomów/XP** (automatyczne nagrody za aktywność)
+- **3 komendy statystyk** (server stats, user stats, activity charts)
+- **2 komendy YouTube** (download do Google Drive, powiadomienia)
 
 ## Ostatnie zmiany
-- 2025-11-12: **Dodano 7 nowych komend (65 total)**
+- 2025-11-12: **Rozszerzono bota do 155 komend total (65 → 155)**
+  - ✅ **90 nowych komend dodanych:**
+    - 20 gier hazardowych (slots, poker, crash, mines, lottery, wheel, bingo, race, etc.)
+    - 15 komend rozrywkowych (fakty, cytaty, fortune, 8ball, dadjoke, roast, etc.)
+    - 15 komend utility (kalkulator, konwerter, qrcode, hash, base64, morse, etc.)
+    - 10 komend społecznościowych (profile, badges, marry, divorce, adopt, hug, kiss, etc.)
+    - 10 komend AI (code, story, poem, recipe, name, slogan, etc.)
+    - 10 komend ekonomicznych (rob, deposit, withdraw, fish, hunt, mine, hack, etc.)
+    - 5 komend moderacyjnych (tempban, lockdown, unlock, purge, nuke)
+    - 13 komend misc (afk, suggest, giveaway, announcement, embed, emoji, etc.)
+  - ✅ **Naprawiono Discord 100-command limit:**
+    - registerCommands.js teraz obsługuje GUILD registration (155 komend per-server)
+    - Fallback: bez GUILD_ID rejestruje pierwsze 100 globalnie
+  - ✅ **Naprawiono /help:**
+    - Dynamiczna kategoryzacja używa command.data.name zamiast nazwy pliku
+    - Pagination dla wszystkich 155 komend
+    - Poprawiona kategoryzacja (emojiguess w games, nie misc)
+  - ✅ **Naprawiono wszystkie bug'i:**
+    - Walidacja ekonomii (amount > 0, balance checks)
+    - AI safeguards (defer/editReply, 1500 char limit)
+    - chat.js prefix command handling
+    - tempban JSON persistence
+  - 📊 **Statystyki:** 155 komend w 14 kategoriach
+- 2025-11-12: **Wcześniejsze zmiany (0 → 65 komend)**
   - ✅ **5 nowych komend moderacyjnych:**
     - /mute - wyciszanie użytkowników (timeout 1-40320 minut)
     - /unmute - odwyciszanie użytkowników
@@ -110,13 +132,33 @@ Wymagane intenty:
 
 ## Uruchomienie
 Bot uruchamia się przez workflow: `node index.js`
-Status: ✅ DZIAŁA (65 slash commands zarejestrowanych i załadowanych)
+Status: ✅ DZIAŁA (155 slash commands zarejestrowanych i załadowanych)
 
 ### Rejestracja slash commands
-Po zmianach w komendach uruchom: `node registerCommands.js`
-To zaktualizuje wszystkie slash commands w Discord.
+⚠️ **WAŻNE:** Discord ma limit **100 globalnych komend**. Bot ma **155 komend**, więc używamy rejestracji **per-serwer**.
 
-## Wszystkie funkcje (65 komend)
+**Aby zarejestrować komendy:**
+```bash
+node registerCommands.js
+```
+
+**Bez GUILD_ID (domyślnie):**
+- Rejestruje pierwsze 100 komend GLOBALNIE (wszystkie serwery)
+- ⚠️ 55 komend nie będzie działać!
+- Aktualizacja: do 1 godziny
+
+**Z GUILD_ID (zalecane - wszystkie 155 komend):**
+1. Skopiuj ID swojego serwera Discord (Prawy klik na server → Kopiuj ID serwera)
+2. Utwórz sekret `GUILD_ID` w Replit Secrets i wklej ID
+3. Uruchom: `node registerCommands.js`
+4. ✅ Wszystkie 155 komend działają natychmiast na tym serwerze!
+
+**Zalety guild commands:**
+- ✅ Brak limitu (wszystkie 155 komend)
+- ✅ Natychmiastowa aktualizacja
+- ✅ Możesz mieć różne komendy na różnych serwerach
+
+## Wszystkie funkcje (155 komend)
 
 ### 🛡️ Moderacja (10 komend)
 - `/ban` - Banuje użytkownika

@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('emoji')
+    .setName('emojiguess')
     .setDescription('Zgadnij co oznacza emoji'),
   async execute(interaction, args, client) {
     const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();

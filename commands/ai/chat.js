@@ -18,7 +18,7 @@ module.exports = {
       if (isSlash) {
         return await interaction.reply(message);
       } else {
-        return interaction.reply(message);
+        return interaction.channel.send(message);
       }
     }
 
@@ -28,16 +28,15 @@ module.exports = {
     } else {
       question = args.join(' ');
       if (!question) {
-        return interaction.reply('❌ Podaj pytanie! Użyj: `!chat [pytanie]`');
+        return interaction.channel.send('❌ Podaj pytanie! Użyj: `!chat [pytanie]`');
       }
     }
 
     let thinkingMsg;
     if (isSlash) {
-      await interaction.reply('🤔 Myślę...');
-      thinkingMsg = await interaction.fetchReply();
+      await interaction.deferReply();
     } else {
-      thinkingMsg = await interaction.reply('🤔 Myślę...');
+      thinkingMsg = await interaction.channel.send('🤔 Myślę...');
     }
 
     try {
@@ -54,11 +53,9 @@ module.exports = {
         max_tokens: 500,
       });
 
-      const answer = completion.choices[0].message.content;
+      const answer = completion.choices[0].message.content.substring(0, 1500);
       
-      const response = answer.length > 2000 
-        ? `🤖 **AI odpowiada:**\n\n${answer.substring(0, 1997)}...`
-        : `🤖 **AI odpowiada:**\n\n${answer}`;
+      const response = `🤖 **AI odpowiada:**\n\n${answer}`;
       
       if (isSlash) {
         await interaction.editReply(response);

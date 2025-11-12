@@ -53,7 +53,7 @@ module.exports = {
     const job = jobs[Math.floor(Math.random() * jobs.length)];
     const earned = Math.floor(Math.random() * (job.max - job.min + 1)) + job.min;
 
-    userData.balance += earned;
+    userData.balance = Math.max(0, userData.balance + earned);
     userData.lastWork = now;
 
     fs.writeFileSync(economyPath, JSON.stringify(economy, null, 2));

@@ -43,7 +43,7 @@ module.exports = {
     }
 
     const reward = Math.floor(Math.random() * 500) + 500;
-    userData.balance += reward;
+    userData.balance = Math.max(0, userData.balance + reward);
     userData.lastDaily = now;
 
     fs.writeFileSync(economyPath, JSON.stringify(economy, null, 2));

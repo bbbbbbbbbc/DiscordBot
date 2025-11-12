@@ -32,4 +32,4 @@ outputType = "console"
 
 [deployment]
 deploymentTarget = "cloudrun"
-run = ["sh", "-c", "/start"]
+run = ["node", "index.js"]

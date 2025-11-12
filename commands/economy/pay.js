@@ -85,8 +85,8 @@ module.exports = {
       }
     }
 
-    sender.balance -= amount;
-    economy[target.id].balance += amount;
+    sender.balance = Math.max(0, sender.balance - amount);
+    economy[target.id].balance = Math.max(0, economy[target.id].balance + amount);
 
     fs.writeFileSync(economyPath, JSON.stringify(economy, null, 2));
 
