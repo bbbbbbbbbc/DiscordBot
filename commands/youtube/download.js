@@ -80,49 +80,45 @@ module.exports = {
         await statusMsg.edit(downloadingMsg);
       }
 
+      const formatsWithoutSignature = info.format.filter(f => !f.hasOwnProperty('s') && f.url);
+      
       let selectedFormat;
       if (format === 'audio') {
-        selectedFormat = info.format.find(f => 
-          f.mimeType && 
-          f.mimeType.includes('audio/mp4') && 
-          !f.hasOwnProperty('s') &&
-          f.url
+        selectedFormat = formatsWithoutSignature.find(f => 
+          f.mimeType && f.mimeType.includes('audio/mp4')
         );
         if (!selectedFormat) {
-          selectedFormat = info.format.find(f => f.mimeType && f.mimeType.includes('audio'));
+          selectedFormat = formatsWithoutSignature.find(f => 
+            f.mimeType && f.mimeType.includes('audio')
+          );
         }
       } else {
-        selectedFormat = info.format.find(f => 
+        selectedFormat = formatsWithoutSignature.find(f => 
           f.mimeType && 
           f.mimeType.includes('video/mp4') && 
-          f.hasOwnProperty('audioChannels') &&
-          !f.hasOwnProperty('s') &&
-          f.url
+          f.hasOwnProperty('audioChannels')
         );
         if (!selectedFormat) {
-          selectedFormat = info.format.find(f => 
-            f.mimeType && 
-            f.mimeType.includes('video/mp4') && 
-            f.hasOwnProperty('audioChannels')
+          selectedFormat = formatsWithoutSignature.find(f => 
+            f.mimeType && f.mimeType.includes('video') && f.hasOwnProperty('audioChannels')
           );
         }
       }
 
-      if (!selectedFormat) {
-        selectedFormat = info.format.find(f => !f.hasOwnProperty('s') && f.url);
+      if (!selectedFormat && formatsWithoutSignature.length > 0) {
+        selectedFormat = formatsWithoutSignature[0];
       }
       
       if (!selectedFormat) {
-        selectedFormat = info.format[0];
+        const errorMsg = '❌ Nie mogę pobrać tego filmu. YouTube wymaga uwierzytelnienia lub film jest niedostępny.';
+        if (isSlash) {
+          return await interaction.editReply(errorMsg);
+        } else {
+          return await statusMsg.edit(errorMsg);
+        }
       }
 
-      let downloadUrl = selectedFormat.url;
-      
-      if (selectedFormat.hasOwnProperty('s')) {
-        const decipher = await play.decipher(info.html5player, selectedFormat.s);
-        const sp = selectedFormat.sp || 'sig';
-        downloadUrl = `${downloadUrl}&${sp}=${encodeURIComponent(decipher)}`;
-      }
+      const downloadUrl = selectedFormat.url;
 
       const writeStream = fs.createWriteStream(filePath);
 
