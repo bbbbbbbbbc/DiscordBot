@@ -1,4 +1,4 @@
-const ytdl = require('@distube/ytdl-core');
+const play = require('play-dl');
 const fs = require('fs');
 const path = require('path');
 const { getUncachableGoogleDriveClient } = require('../../utils/googleDrive');
@@ -34,8 +34,8 @@ module.exports = {
       format = args[1] === 'audio' ? 'audio' : 'video';
     }
     
-    if (!url || !ytdl.validateURL(url)) {
-      const message = '❌ Podaj prawidłowy link do YouTube! Użyj: `!download [link YouTube]`';
+    if (!url || play.yt_validate(url) !== 'video') {
+      const message = '❌ Podaj prawidłowy link do YouTube! Użyj: `/download url:[link YouTube]`';
       if (isSlash) {
         return await interaction.reply(message);
       } else {
@@ -52,8 +52,9 @@ module.exports = {
     }
 
     try {
-      const info = await ytdl.getInfo(url);
-      const title = info.videoDetails.title.replace(/[^\w\s]/gi, '').substring(0, 50);
+      const info = await play.video_info(url);
+      const video = info.video_details;
+      const title = video.title.replace(/[^\w\s]/gi, '').substring(0, 50);
       
       const fileName = `${title}.${format === 'audio' ? 'mp3' : 'mp4'}`;
       const filePath = path.join(__dirname, '../../downloads', fileName);
@@ -62,24 +63,24 @@ module.exports = {
         fs.mkdirSync(path.join(__dirname, '../../downloads'), { recursive: true });
       }
 
-      const downloadingMsg = `📥 Pobieranie: **${info.videoDetails.title}**...`;
+      const downloadingMsg = `📥 Pobieranie: **${video.title}**...`;
       if (isSlash) {
         await interaction.editReply(downloadingMsg);
       } else {
         await statusMsg.edit(downloadingMsg);
       }
 
-      const stream = ytdl(url, {
-        quality: format === 'audio' ? 'highestaudio' : 'highest',
-        filter: format === 'audio' ? 'audioonly' : 'audioandvideo'
+      const stream = await play.stream(url, {
+        quality: format === 'audio' ? 2 : 0
       });
 
       const writeStream = fs.createWriteStream(filePath);
-      stream.pipe(writeStream);
+      stream.stream.pipe(writeStream);
 
       await new Promise((resolve, reject) => {
         writeStream.on('finish', resolve);
         writeStream.on('error', reject);
+        stream.stream.on('error', reject);
       });
 
       const uploadingMsg = '☁️ Przesyłam na Google Drive...';
@@ -109,7 +110,7 @@ module.exports = {
 
       fs.unlinkSync(filePath);
 
-      const successMsg = `✅ **Gotowe!**\n\n📁 Plik: **${info.videoDetails.title}**\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`;
+      const successMsg = `✅ **Gotowe!**\n\n📁 Plik: **${video.title}**\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`;
       if (isSlash) {
         await interaction.editReply(successMsg);
       } else {
@@ -118,11 +119,26 @@ module.exports = {
 
     } catch (error) {
       console.error('Download error:', error);
-      const errorMsg = '❌ Wystąpił błąd podczas pobierania! Upewnij się, że link jest prawidłowy.';
+      
+      let errorMsg = '❌ Wystąpił błąd podczas pobierania!';
+      if (error.message && error.message.includes('Sign in to confirm your age')) {
+        errorMsg = '❌ Ten film ma ograniczenie wieku! YouTube wymaga zalogowania.\n💡 Spróbuj innego filmu bez ograniczenia wieku.';
+      } else if (error.message && error.message.includes('unavailable')) {
+        errorMsg = '❌ Film niedostępny! Może być zablokowany lub usunięty.';
+      }
+      
       if (isSlash) {
-        await interaction.editReply(errorMsg);
+        if (interaction.replied || interaction.deferred) {
+          await interaction.editReply(errorMsg);
+        } else {
+          await interaction.reply(errorMsg);
+        }
       } else {
-        await statusMsg.edit(errorMsg);
+        if (statusMsg) {
+          await statusMsg.edit(errorMsg);
+        } else {
+          await interaction.reply(errorMsg);
+        }
       }
     }
   },
