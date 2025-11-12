@@ -110,7 +110,17 @@ module.exports = {
         throw new Error('Nieobsługiwany link! Obsługiwane platformy: YouTube, Spotify');
       }
 
-      const info = await ytdl.getInfo(youtubeUrl);
+      const ytdlOptions = {};
+      
+      if (process.env.YOUTUBE_COOKIES) {
+        ytdlOptions.requestOptions = {
+          headers: {
+            'Cookie': process.env.YOUTUBE_COOKIES
+          }
+        };
+      }
+
+      const info = await ytdl.getInfo(youtubeUrl, ytdlOptions);
       if (!title) {
         title = info.videoDetails.title;
       }
@@ -136,7 +146,10 @@ module.exports = {
         throw new Error('Nie znaleziono odpowiedniego formatu dla tego filmu');
       }
 
-      const stream = ytdl.downloadFromInfo(info, { format: selectedFormat });
+      const stream = ytdl.downloadFromInfo(info, { 
+        format: selectedFormat,
+        ...ytdlOptions
+      });
       const writeStream = fs.createWriteStream(filePath);
       
       stream.pipe(writeStream);

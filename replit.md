@@ -17,6 +17,11 @@ Zaawansowany bot Discord napisany w Node.js z szerokim zakresem funkcjonalności
 - Komendy użytkowe
 
 ## Ostatnie zmiany
+- 2025-11-12: **Rozszerzenie /download o Spotify i YouTube cookies**
+  - ✅ Dodano pełną obsługę Spotify - pobieranie utworów poprzez wyszukanie na YouTube
+  - ✅ Dodano obsługę YouTube cookies - obejście błędów 403 i filmów z ograniczeniem wieku
+  - Cookies opcjonalne - jeśli nie podane, bot działa normalnie
+  - Aby dodać cookies: ustaw sekret YOUTUBE_COOKIES (instrukcje poniżej)
 - 2025-11-12: **Naprawa komendy /play** - naprawiono błąd "Invalid URL"
   - Problem: nazwa opcji `utwór` (z polskim znakiem) nie była akceptowana przez Discord API
   - Rozwiązanie: zmieniono na `utwor` (bez polskich znaków w nazwie opcji)
