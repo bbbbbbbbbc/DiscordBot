@@ -107,7 +107,8 @@ client.once('clientReady', () => {
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  console.log(`⚡ Slash command: /${interaction.commandName} (użytkownik: ${interaction.user.tag})`);
+  const context = interaction.guild ? 'Guild' : interaction.channel?.type === 1 ? 'DM' : 'Unknown';
+  console.log(`⚡ Slash command: /${interaction.commandName} (użytkownik: ${interaction.user.tag}, kontekst: ${context})`);
 
   const command = client.commands.get(interaction.commandName);
 

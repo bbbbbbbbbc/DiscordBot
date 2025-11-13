@@ -37,15 +37,50 @@
 ### ✨ **Kluczowe funkcje:**
 
 - ✅ **Slash Commands** (`/`) i **Prefix Commands** (`!`) - pełna kompatybilność
+- 🚀 **User App** - "Dodaj do Moich aplikacji" - używaj wszędzie (DM, każdy serwer)!
 - ✅ **System ekonomii** z wirtualną walutą i sklepem
 - ✅ **System poziomów/XP** z automatycznymi nagrodami
 - ✅ **Odtwarzacz muzyki** z YouTube i Spotify
 - ✅ **AI Integration** (OpenAI GPT) - chatbot, generowanie kodu, map, pluginów
-- ✅ **YouTube Downloads** - pobieranie filmów/muzyki na Google Drive
+- ✅ **YouTube Downloads** - pobieranie filmów/muzyki na Google Drive (360p-4K)
 - ✅ **Automoderacja** - filtr wulgaryzmów, anty-spam
 - ✅ **Statystyki** - śledzenie aktywności użytkowników i serwera
 - ✅ **Persistent Storage** - JSON-based data dla ekonomii, poziomów, statystyk
 - ✅ **Tempban System** - automatyczne odbanowanie po wygaśnięciu czasu
+
+---
+
+## 🌟 User App - Dodaj do Moich aplikacji!
+
+Bot obsługuje **User Install** - możesz go dodać do "Moich aplikacji" i używać **wszędzie**:
+- ✅ W prywatnych wiadomościach (DM)
+- ✅ Na każdym serwerze (nawet bez uprawnień)
+- ✅ W grupach prywatnych
+- ✅ 140+ komend dostępnych bez dodawania bota na serwer!
+
+### **Jak dodać jako User App?**
+
+1. **Skonfiguruj w Discord Developer Portal:**
+   - Wejdź na: https://discord.com/developers/applications
+   - Kliknij swoją aplikację → **Installation**
+   - Zaznacz: ✅ **User Install**
+   - Zapisz zmiany
+
+2. **Dodaj do Moich aplikacji:**
+   - Użyj linku: `https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID`
+   - Lub wyszukaj bota w Discord i kliknij **"Dodaj do Moich aplikacji"**
+
+3. **Gotowe!** Używaj komend wszędzie:
+   ```
+   /help
+   /meme
+   /joke
+   /slots 100
+   /chat co słychać?
+   /download https://youtube.com/...
+   ```
+
+📖 **Szczegółowa instrukcja:** Zobacz [USER_APP_SETUP.md](USER_APP_SETUP.md)
 
 ---
 
@@ -567,6 +602,13 @@ node index.js
 ---
 
 ## 📝 Changelog
+
+### **v2.2.0 - User App Update**
+- 🚀 Dodano obsługę User Install - "Dodaj do Moich aplikacji"
+- ✅ 140+ komend dostępnych w DM i wszędzie
+- ✅ Inteligentne rozróżnianie kontekstu (Guild/DM)
+- ✅ Komendy moderacyjne tylko na serwerach (zabezpieczenie)
+- 📖 Szczegółowa instrukcja konfiguracji (USER_APP_SETUP.md)
 
 ### **v2.1.0 - Quality Update**
 - ✅ Dodano wybór jakości wideo do `/download` (360p-4K)

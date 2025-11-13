@@ -16,6 +16,13 @@ Najpotężniejszy bot Discord napisany w Node.js z 155 komendami w 12 kategoriac
 - **2 komendy YouTube** (download do Google Drive, powiadomienia)
 
 ## Ostatnie zmiany
+- 2025-11-13: **Dodano obsługę User App - "Dodaj do Moich aplikacji"**
+  - 🚀 **User Install support:** Bot można dodać do "Moich aplikacji" Discord
+  - ✅ **140+ komend w DM:** Większość komend działa w prywatnych wiadomościach
+  - ✅ **Konteksty:** Guild (serwer), DM (prywatne), Private Channel (grupy)
+  - 🛡️ **Zabezpieczenia:** Komendy moderacyjne tylko na serwerach (guild only)
+  - 📝 **Utworzono USER_APP_SETUP.md:** Szczegółowa instrukcja konfiguracji
+  - 🔧 **Automatyczne integration_types:** Bot sam konfiguruje gdzie komendy działają
 - 2025-11-13: **Dodano wybór jakości wideo do `/download`**
   - ✅ **7 opcji jakości:** 360p, 480p, 720p HD, 1080p Full HD, 1440p 2K, 2160p 4K, Najlepsza dostępna
   - 🎬 **Kontrola rozmiaru pliku:** niższa jakość = mniejszy plik, szybsze pobieranie
