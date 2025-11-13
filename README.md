@@ -52,23 +52,72 @@
 ## 🚀 Instalacja
 
 ### **Wymagania:**
-- Node.js 18+ (zalecane: 20)
+- Node.js 16+ (zalecane: 20)
 - npm lub yarn
 - Konto Discord Developer
+- ffmpeg (opcjonalnie - dla muzyki i YouTube)
+
+---
+
+### **⚡ METODA 1: Automatyczna instalacja (ZALECANE)**
+
+Użyj skryptu instalacyjnego który automatycznie zainstaluje wszystko:
+
+**Linux/Mac/Hosting (Pella.app, VPS):**
+```bash
+bash install.sh
+```
+
+**Windows:**
+```batch
+install.bat
+```
+
+**Skrypt automatycznie:**
+- ✅ Sprawdzi Node.js i npm
+- ✅ Usunie uszkodzone pakiety
+- ✅ Zainstaluje wszystkie zależności
+- ✅ Utworzy potrzebne foldery (data, downloads)
+- ✅ Sprawdzi zmienne środowiskowe
+- ✅ Wyświetli instrukcje uruchomienia
+
+---
+
+### **📦 METODA 2: Manualna instalacja**
 
 ### **1. Sklonuj repozytorium:**
 ```bash
-git clone https://github.com/TWOJA_NAZWA/discord-bot-155-komend.git
-cd discord-bot-155-komend
+git clone https://github.com/bbbbbbbbbc/DiscordBot.git
+cd DiscordBot
 ```
 
 ### **2. Zainstaluj zależności:**
 ```bash
+# Usuń stare pakiety (jeśli istnieją)
+rm -rf node_modules package-lock.json
+
+# Zainstaluj wszystko od zera
 npm install
 ```
 
-### **3. Konfiguracja:**
-Stwórz plik `.env` (lub użyj Secrets w Replit):
+### **3. Zainstaluj ffmpeg (opcjonalnie - dla /play i /download):**
+
+**Ubuntu/Debian:**
+```bash
+sudo apt install ffmpeg
+```
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Windows:** Pobierz z [ffmpeg.org](https://ffmpeg.org/download.html)
+
+---
+
+### **4. Konfiguracja:**
+Stwórz plik `.env` (lub użyj Secrets w Replit/panelu hostingu):
 
 ```env
 DISCORD_BOT_TOKEN=twoj_token_bota_discord

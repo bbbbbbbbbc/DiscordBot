@@ -16,6 +16,20 @@ Najpotężniejszy bot Discord napisany w Node.js z 155 komendami w 12 kategoriac
 - **2 komendy YouTube** (download do Google Drive, powiadomienia)
 
 ## Ostatnie zmiany
+- 2025-11-13: **Dodano skrypty instalacyjne dla zewnętrznego hostingu**
+  - ✅ **Utworzono install.sh** - automatyczny instalator dla Linux/Mac/Pella.app/VPS
+  - ✅ **Utworzono install.bat** - automatyczny instalator dla Windows
+  - 🔧 **Funkcje skryptów:**
+    - Sprawdzanie Node.js i npm (minimum v16)
+    - Usuwanie uszkodzonych node_modules (naprawia błąd "Cannot find module")
+    - Automatyczna instalacja wszystkich 14 pakietów npm
+    - Tworzenie folderów data/ i downloads/
+    - Weryfikacja zmiennych środowiskowych
+    - Sprawdzanie ffmpeg (dla YouTube/muzyki)
+    - Wyświetlanie instrukcji uruchomienia
+  - 📝 **Zaktualizowano README.md** - dodano instrukcje automatycznej instalacji
+  - 🎯 **Rozwiązanie problemu na Pella.app** - uszkodzone pakiety lodash naprawione przez reinstalację
+  - ✅ **Dodano "start": "node index.js"** do package.json dla hostingów
 - 2025-11-12: **Rozszerzono bota do 155 komend total (65 → 155)**
   - ✅ **90 nowych komend dodanych:**
     - 20 gier hazardowych (slots, poker, crash, mines, lottery, wheel, bingo, race, etc.)
