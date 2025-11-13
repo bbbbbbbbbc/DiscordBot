@@ -47,21 +47,18 @@ module.exports = {
       let videoData;
       
       const validationType = play.yt_validate(query);
-      console.log('DEBUG /play - query:', query, 'validationType:', validationType);
       
       if (validationType === 'video') {
         videoUrl = query;
-        const info = await play.video_info(query);
-        videoData = {
-          title: info.video_details.title,
-          url: query,
-          channel: { name: info.video_details.channel.name },
-          durationRaw: info.video_details.durationRaw,
-          thumbnails: info.video_details.thumbnails
-        };
+      } else if (validationType === 'playlist') {
+        const message = '❌ Playlisty nie są obsługiwane. Podaj link do pojedynczego utworu.';
+        if (isSlash) {
+          return await interaction.followUp(message);
+        } else {
+          return channel.send(message);
+        }
       } else {
         const searchResult = await play.search(query, { limit: 1 });
-        console.log('DEBUG /play - searchResult:', searchResult ? searchResult.length : 'null', searchResult?.[0]);
         
         if (!searchResult || searchResult.length === 0) {
           const message = '❌ Nie znaleziono utworu!';
@@ -72,20 +69,23 @@ module.exports = {
           }
         }
         
-        const firstResult = searchResult[0];
-        videoUrl = firstResult.url;
-        videoData = firstResult;
-        
-        console.log('DEBUG /play - videoUrl:', videoUrl, 'title:', firstResult.title);
+        videoUrl = searchResult[0].url;
       }
 
       if (!videoUrl) {
-        console.error('DEBUG /play - videoUrl is undefined!');
         throw new Error('Nie można uzyskać URL filmu');
       }
 
-      console.log('DEBUG /play - Calling play.stream with URL:', videoUrl);
       const stream = await play.stream(videoUrl);
+      const info = await play.video_info(videoUrl);
+      
+      videoData = {
+        title: info.video_details.title,
+        url: videoUrl,
+        channel: { name: info.video_details.channel?.name || 'Nieznany' },
+        durationRaw: info.video_details.durationRaw || 'N/A',
+        thumbnails: info.video_details.thumbnails || [{ url: 'https://via.placeholder.com/120' }]
+      };
 
       const connection = joinVoiceChannel({
         channelId: member.voice.channel.id,
