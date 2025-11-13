@@ -3,7 +3,7 @@ const { EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits } = require('disc
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('announcement')
-    .setDescription('Wyślij ogłoszenie na kanale')
+    .setDescription('Wyślij ogłoszenie na kanale (auto @everyone, w nocy @here)')
     .addStringOption(option =>
       option.setName('wiadomosc')
         .setDescription('Treść ogłoszenia')
@@ -13,16 +13,6 @@ module.exports = {
       option.setName('kanal')
         .setDescription('Kanał gdzie wysłać (domyślnie: obecny)')
         .setRequired(false)
-    )
-    .addStringOption(option =>
-      option.setName('tag')
-        .setDescription('Oznacz użytkowników')
-        .setRequired(false)
-        .addChoices(
-          { name: '@everyone', value: 'everyone' },
-          { name: '@here', value: 'here' },
-          { name: 'Brak', value: 'none' }
-        )
     )
     .addStringOption(option =>
       option.setName('kolor')
@@ -46,12 +36,15 @@ module.exports = {
       return interaction.reply('❌ Tylko administratorzy mogą wysyłać ogłoszenia!');
     }
 
-    let message, targetChannel, tag, color;
+    const hour = new Date().getHours();
+    const isNightTime = hour >= 22 || hour < 6;
+    const autoTag = isNightTime ? 'here' : 'everyone';
+
+    let message, targetChannel, color;
 
     if (isSlash) {
       message = interaction.options.getString('wiadomosc');
       targetChannel = interaction.options.getChannel('kanal') || interaction.channel;
-      tag = interaction.options.getString('tag') || 'none';
       color = interaction.options.getString('kolor') || '#0099FF';
     } else {
       if (!args[0]) {
@@ -70,7 +63,6 @@ module.exports = {
         message = args.join(' ');
       }
       
-      tag = 'none';
       color = '#0099FF';
     }
 
@@ -92,27 +84,29 @@ module.exports = {
       }
     }
 
+    const avatarURL = interaction.user.displayAvatarURL({ dynamic: true, size: 128 });
+    
     const embed = new EmbedBuilder()
       .setColor(color)
       .setTitle('📢 Ogłoszenie')
       .setDescription(message)
-      .setFooter({ text: `Wysłane przez ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+      .setFooter({ 
+        text: `Wysłane przez ${interaction.user.username}`,
+        iconURL: avatarURL
+      })
       .setTimestamp();
 
     try {
-      let tagText = '';
-      if (tag === 'everyone') {
-        tagText = '@everyone';
-      } else if (tag === 'here') {
-        tagText = '@here';
-      }
+      const tagText = autoTag === 'everyone' ? '@everyone' : '@here';
 
       await targetChannel.send({
-        content: tagText || null,
-        embeds: [embed]
+        content: tagText,
+        embeds: [embed],
+        allowedMentions: { parse: ['everyone', 'here'] }
       });
 
-      const successMsg = `✅ Ogłoszenie wysłane na ${targetChannel}!`;
+      const timeInfo = isNightTime ? '🌙 (noc - @here)' : '☀️ (@everyone)';
+      const successMsg = `✅ Ogłoszenie wysłane na ${targetChannel}! ${timeInfo}`;
       if (isSlash) {
         await interaction.reply({ content: successMsg, ephemeral: true });
       } else {
