@@ -16,6 +16,13 @@ Najpotężniejszy bot Discord napisany w Node.js z 155 komendami w 12 kategoriac
 - **2 komendy YouTube** (download do Google Drive, powiadomienia)
 
 ## Ostatnie zmiany
+- 2025-11-13: **Dodano wybór jakości wideo do `/download`**
+  - ✅ **7 opcji jakości:** 360p, 480p, 720p HD, 1080p Full HD, 1440p 2K, 2160p 4K, Najlepsza dostępna
+  - 🎬 **Kontrola rozmiaru pliku:** niższa jakość = mniejszy plik, szybsze pobieranie
+  - 📺 **Dynamiczny format selection:** youtube-dl-exec automatycznie wybiera najlepszy dostępny stream
+  - ✅ **Obsługa błędów:** komunikat jeśli wybrana jakość nie jest dostępna
+  - 📊 **Wyświetlanie jakości:** w komunikatach pobierania i podsumowaniu
+  - 🔧 **Kompatybilność wsteczna:** domyślna wartość "best" dla istniejących użytkowników
 - 2025-11-13: **Dodano skrypty instalacyjne dla zewnętrznego hostingu**
   - ✅ **Utworzono install.sh** - automatyczny instalator dla Linux/Mac/Pella.app/VPS
   - ✅ **Utworzono install.bat** - automatyczny instalator dla Windows

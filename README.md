@@ -475,6 +475,8 @@ node index.js
 - `/download https://youtube.com/...` - Pobierz film/muzykę na Google Drive
   - Wspiera YouTube i Spotify
   - Formaty: Video (mp4) lub Audio (mp3)
+  - **Jakość wideo:** 360p, 480p, 720p HD, 1080p Full HD, 1440p 2K, 2160p 4K
+  - Automatyczne wgrywanie na Google Drive
 - `/ytnotify kanał` - Powiadomienia o nowych filmach
 
 </details>
@@ -565,6 +567,13 @@ node index.js
 ---
 
 ## 📝 Changelog
+
+### **v2.1.0 - Quality Update**
+- ✅ Dodano wybór jakości wideo do `/download` (360p-4K)
+- ✅ Skrypty instalacyjne dla zewnętrznego hostingu (install.sh, install.bat)
+- ✅ Naprawiono kompatybilność z Pella.app i innymi hostingami
+- ✅ Dodano script "start" do package.json
+- ✅ Zaktualizowano dokumentację instalacji
 
 ### **v2.0.0 - Mega Update (155 komend)**
 - ✅ Dodano 90 nowych komend (65 → 155)

@@ -24,17 +24,33 @@ module.exports = {
           { name: 'Wideo', value: 'video' },
           { name: 'Audio', value: 'audio' }
         )
+    )
+    .addStringOption(option =>
+      option.setName('quality')
+        .setDescription('Jakość wideo (tylko dla formatu wideo)')
+        .setRequired(false)
+        .addChoices(
+          { name: '360p (niska jakość, mały plik)', value: '360' },
+          { name: '480p (średnia jakość)', value: '480' },
+          { name: '720p HD (dobra jakość)', value: '720' },
+          { name: '1080p Full HD (wysoka jakość)', value: '1080' },
+          { name: '1440p 2K (bardzo wysoka jakość)', value: '1440' },
+          { name: '2160p 4K (maksymalna jakość)', value: '2160' },
+          { name: 'Najlepsza dostępna', value: 'best' }
+        )
     ),
   async execute(interaction, args) {
     const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
     
-    let url, format;
+    let url, format, quality;
     if (isSlash) {
       url = interaction.options?.getString('url');
       format = interaction.options?.getString('format') || 'audio';
+      quality = interaction.options?.getString('quality') || 'best';
     } else {
       url = args[0];
       format = args[1] === 'video' ? 'video' : 'audio';
+      quality = args[2] || 'best';
     }
     
     if (!url) {
@@ -120,7 +136,8 @@ module.exports = {
       const fileName = `${sanitizedTitle}.${fileExt}`;
       filePath = path.join(downloadsDir, fileName);
 
-      const downloadingMsg = `📥 Pobieranie: **${sanitizedTitle}**${artist ? ` - ${artist}` : ''}...`;
+      const qualityText = format === 'video' && quality !== 'best' ? ` (${quality}p)` : '';
+      const downloadingMsg = `📥 Pobieranie: **${sanitizedTitle}**${artist ? ` - ${artist}` : ''}${qualityText}...`;
       if (isSlash) {
         await interaction.editReply(downloadingMsg);
       } else {
@@ -137,7 +154,16 @@ module.exports = {
         ytdlpOptions.audioFormat = 'mp3';
         ytdlpOptions.audioQuality = 0;
       } else {
-        ytdlpOptions.format = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+        let formatString;
+        
+        if (quality === 'best') {
+          formatString = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+        } else {
+          const height = quality;
+          formatString = `bestvideo[height<=${height}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}]`;
+        }
+        
+        ytdlpOptions.format = formatString;
         ytdlpOptions.mergeOutputFormat = 'mp4';
       }
 
@@ -175,7 +201,8 @@ module.exports = {
       fs.unlinkSync(filePath);
 
       const platform = url.includes('spotify.com') ? '🎵 Spotify' : '📺 YouTube';
-      const successMsg = `✅ **Gotowe!**\n\n${platform}\n📁 Plik: **${sanitizedTitle}**${artist ? `\n👤 Artysta: ${artist}` : ''}\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`;
+      const qualityInfo = format === 'video' && quality !== 'best' ? `\n📺 Jakość: ${quality}p` : '';
+      const successMsg = `✅ **Gotowe!**\n\n${platform}\n📁 Plik: **${sanitizedTitle}**${artist ? `\n👤 Artysta: ${artist}` : ''}${qualityInfo}\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`;
       if (isSlash) {
         await interaction.editReply(successMsg);
       } else {
@@ -208,6 +235,9 @@ module.exports = {
           errorMsg = '❌ Błąd konwersji audio. Spróbuj ponownie.';
         } else if (error.stderr && error.stderr.includes('cookies are no longer valid')) {
           errorMsg = '❌ Błąd pobierania. Film może wymagać logowania lub jest niedostępny.';
+        } else if (error.message.includes('Requested format is not available') || 
+                   error.stderr?.includes('Requested format is not available')) {
+          errorMsg = `❌ Wybrana jakość ${quality}p nie jest dostępna dla tego filmu. Spróbuj niższej jakości.`;
         } else {
           const shortMsg = error.message.substring(0, 100);
           errorMsg = `❌ Błąd: ${shortMsg}${error.message.length > 100 ? '...' : ''}`;
