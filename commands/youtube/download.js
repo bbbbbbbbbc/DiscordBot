@@ -27,26 +27,26 @@ module.exports = {
     )
     .addStringOption(option =>
       option.setName('quality')
-        .setDescription('Jakość wideo (tylko dla formatu wideo)')
+        .setDescription('Jakość wideo')
         .setRequired(false)
         .addChoices(
-          { name: '360p (niska jakość, mały plik)', value: '360' },
-          { name: '480p (średnia jakość)', value: '480' },
-          { name: '720p HD (dobra jakość)', value: '720' },
-          { name: '1080p Full HD (wysoka jakość)', value: '1080' },
-          { name: '1440p 2K (bardzo wysoka jakość)', value: '1440' },
-          { name: '2160p 4K (maksymalna jakość)', value: '2160' },
-          { name: 'Najlepsza dostępna', value: 'best' }
+          { name: '360p', value: '360' },
+          { name: '480p', value: '480' },
+          { name: '720p HD', value: '720' },
+          { name: '1080p Full HD', value: '1080' },
+          { name: '1440p 2K', value: '1440' },
+          { name: '2160p 4K', value: '2160' },
+          { name: 'Najlepsza', value: 'best' }
         )
     )
     .addStringOption(option =>
       option.setName('wyslijdo')
-        .setDescription('Gdzie wysłać pobrany plik?')
+        .setDescription('Gdzie wysłać plik')
         .setRequired(false)
         .addChoices(
-          { name: '☁️ Google Drive (link do pliku)', value: 'drive' },
-          { name: '💬 Discord (załącznik, max 25MB)', value: 'discord' },
-          { name: '📤 Oba (Drive + Discord)', value: 'both' }
+          { name: 'Google Drive', value: 'drive' },
+          { name: 'Discord (max 25MB)', value: 'discord' },
+          { name: 'Drive + Discord', value: 'both' }
         )
     ),
   async execute(interaction, args) {
