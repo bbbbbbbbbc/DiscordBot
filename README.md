@@ -617,57 +617,182 @@ node index.js
 
 ## 📝 Changelog
 
-### **v2.4.0 - Playlist Support**
-- 🎵 **Obsługa playlist:** YouTube, Spotify i innych platform
-- ✅ **Spotify playlists:** Pełna paginacja (nieograniczona liczba utworów)
-- ✅ **YouTube playlists:** Automatyczne dodawanie wszystkich utworów
-- ✅ **System kolejki:** Automatyczne odtwarzanie następnych utworów
-- ✅ **Inteligentne wyszukiwanie:** Spotify tracks → YouTube streaming
-- 🔧 **Bezpieczne zarządzanie:** Auto-cleanup ffmpeg procesów
+### **v2.4.0 - Playlist Support (13.11.2024)**
+**🎵 Pełna obsługa playlist Spotify i YouTube**
 
-### **v2.3.0 - Music System Fix**
-- 🎵 **Naprawiono system muzyczny:** `/play` działa na 100%
-- ✅ **Nowy silnik audio:** youtube-dl-exec + ffmpeg dla stabilnego streamingu
-- ✅ **Zainstalowano @discordjs/opus:** pełna obsługa enkodowania audio Discord
-- 🔧 **Dodano `/join`:** bot dołącza do kanału głosowego (156 komend)
-- ✅ **Pełna funkcjonalność:** play, stop, skip, pause, resume, volume, queue
+#### Nowe funkcje:
+- ✅ **Playlisty Spotify:**
+  - Automatyczne pobieranie wszystkich utworów (bez limitu)
+  - Wyszukiwanie każdego utworu na YouTube
+  - Działa BEZ logowania do Spotify (spotify-url-info)
+  - Obsługa playlist publicznych i prywatnych
+  
+- ✅ **Playlisty YouTube:**
+  - Automatyczne dodawanie wszystkich filmów z playlisty
+  - Integracja z play-dl dla stabilnego działania
+  - Obsługa długich playlist (100+ filmów)
 
-### **v2.2.0 - User App Update**
-- 🚀 Dodano obsługę User Install - "Dodaj do Moich aplikacji"
-- ✅ 140+ komend dostępnych w DM i wszędzie
-- ✅ Inteligentne rozróżnianie kontekstu (Guild/DM)
-- ✅ Komendy moderacyjne tylko na serwerach (zabezpieczenie)
-- 📖 Szczegółowa instrukcja konfiguracji (USER_APP_SETUP.md)
+- ✅ **System kolejki:**
+  - Automatyczne odtwarzanie utworów po kolei
+  - Możliwość dodawania utworów podczas odtwarzania
+  - Wyświetlanie liczby utworów w kolejce
+  - Pominięcie utworów które się nie udało znaleźć
 
-### **v2.1.0 - Quality Update**
-- ✅ Dodano wybór jakości wideo do `/download` (360p-4K)
-- ✅ Skrypty instalacyjne dla zewnętrznego hostingu (install.sh, install.bat)
-- ✅ Naprawiono kompatybilność z Pella.app i innymi hostingami
-- ✅ Dodano script "start" do package.json
-- ✅ Zaktualizowano dokumentację instalacji
+- 🔧 **Poprawki techniczne:**
+  - Auto-cleanup procesów ffmpeg (brak memory leaks)
+  - Lepsze error handling dla playlist
+  - Logowanie postępu pobierania utworów
+  - Optymalizacja wydajności
 
-### **v2.0.0 - Mega Update (155 komend)**
-- ✅ Dodano 90 nowych komend (65 → 155)
-- ✅ 20 nowych gier hazardowych
-- ✅ 15 komend rozrywkowych
-- ✅ 15 komend utility
-- ✅ 10 komend społecznościowych
-- ✅ 10 komend AI
-- ✅ 10 komend ekonomicznych
-- ✅ 5 komend moderacyjnych
-- ✅ 13 komend misc
-- ✅ Naprawiono Discord 100-command limit (guild registration)
-- ✅ Przepisano /help z pagination
-- ✅ Naprawiono wszystkie bugi (ekonomia, AI, tempban)
-- ✅ Zaktualizowano dokumentację
+#### Przykłady użycia:
+```
+/play https://open.spotify.com/playlist/abc123
+/play https://youtube.com/playlist?list=xyz789
+/play https://open.spotify.com/track/def456
+```
 
-### **v1.0.0 - Initial Release**
-- ✅ 65 komend podstawowych
-- ✅ System ekonomii, poziomów, statystyk
-- ✅ Odtwarzacz muzyki
-- ✅ Podstawowe komendy AI
-- ✅ YouTube download
-- ✅ Automoderacja
+### **v2.3.0 - Music System Fix (13.11.2024)**
+**🎵 Całkowite przebudowanie systemu muzycznego**
+
+#### Naprawione problemy:
+- ✅ **Rozwiązano problem YouTube blocking:**
+  - Nowy pipeline: play-dl → youtube-dl-exec → ffmpeg → Discord
+  - Streaming PCM audio (48kHz, 2 kanały)
+  - Stabilne połączenie z mechanizmem reconnect
+  
+- ✅ **Zainstalowano @discordjs/opus:**
+  - Poprawne enkodowanie audio dla Discord
+  - Lepsza jakość dźwięku
+  - Niższe opóźnienie
+
+- ✅ **Dodano komendę `/join`:** (156 komend total)
+  - Bot dołącza do kanału głosowego bez odtwarzania
+  - Przydatne do testowania połączenia
+
+#### Testowane funkcje:
+- `/play` - wyszukiwanie i odtwarzanie ✅
+- `/play [link]` - bezpośrednie linki YouTube ✅
+- `/volume` - kontrola głośności ✅
+- `/skip` - pomijanie utworów ✅
+- Wszystkie 8 komend muzycznych działają bez błędów
+
+### **v2.2.0 - User App Update (12.11.2024)**
+**🚀 Obsługa User Install - użyj bota wszędzie!**
+
+#### Nowe możliwości:
+- ✅ **User Install Support:**
+  - Bot dostępny jako "User App" w Discord
+  - 140+ komend działających w DM
+  - Możliwość używania bota poza serwerami
+  
+- ✅ **Inteligentny system kontekstu:**
+  - Automatyczne rozróżnianie Guild/DM
+  - Komendy moderacyjne tylko na serwerach
+  - Zabezpieczenia przed nadużyciami
+  
+- 📖 **Dokumentacja:**
+  - Szczegółowy przewodnik USER_APP_SETUP.md
+  - Instrukcje konfiguracji w Discord Developer Portal
+  - Przykłady użycia w różnych kontekstach
+
+### **v2.1.0 - Quality Update (11.11.2024)**
+**📥 Ulepszenia systemu pobierania i kompatybilności**
+
+#### Nowe funkcje:
+- ✅ **Wybór jakości wideo w `/download`:**
+  - 360p, 480p, 720p, 1080p, 1440p, 4K
+  - Automatyczne wykrywanie dostępnych jakości
+  - Wybór między MP3 (audio) i MP4 (wideo)
+  
+- ✅ **Hosting zewnętrzny:**
+  - Skrypty instalacyjne: install.sh (Linux/Mac), install.bat (Windows)
+  - Kompatybilność z Pella.app, Railway, Heroku
+  - Script "start" w package.json dla łatwego uruchamiania
+  
+- ✅ **Ulepszenia techniczne:**
+  - Lepsze zarządzanie zależnościami
+  - Automatyczna instalacja ffmpeg
+  - Zaktualizowana dokumentacja instalacji
+
+### **v2.0.0 - Mega Update (10.11.2024)**
+**🎮 155 komend - największa aktualizacja w historii!**
+
+#### Nowe komendy (90 dodanych):
+- 🎲 **20 gier hazardowych:**
+  - Slots, poker, blackjack, roulette, crash game
+  - Coinflip, dice, mines, keno, plinko
+  - Horse racing, virtual slots, wheel of fortune
+  
+- 🎉 **15 komend rozrywkowych:**
+  - Memy, zdjęcia zwierząt, dowcipy, cytaty
+  - 8ball, trivia, would you rather, this or that
+  
+- 🔧 **15 komend utility:**
+  - Kalkulator, reminder, timer, poll, vote
+  - Weather, translate, qrcode, shorturl
+  
+- 👥 **10 komend społecznościowych:**
+  - Hug, kiss, pat, slap, highfive
+  - Ship, roast, compliment, marry
+  
+- 🤖 **10 komend AI:**
+  - Chat, generatemap, minecraftplugin, code
+  - Image analysis, text completion, summarize
+  
+- 💰 **10 komend ekonomicznych:**
+  - Shop, inventory, trade, auction, stonks
+  - Bank, loan, invest, heist
+  
+- 🛡️ **5 komend moderacyjnych:**
+  - Automod, wordfilter, lockdown, unlock
+  - Slowmode advanced
+  
+- 📊 **13 komend misc:**
+  - Advanced statistics, leaderboards, profiles
+  - Server boost info, role management
+
+#### Naprawione problemy:
+- ✅ **Discord 100-command limit:**
+  - Implementacja per-server registration (GUILD_ID)
+  - Wszystkie 155 komend dostępne natychmiast
+  
+- ✅ **System pomocy:**
+  - Przepisano `/help` z pagination
+  - Dynamiczna kategoryzacja komend
+  - Lepszy UX i nawigacja
+  
+- ✅ **Bugi:**
+  - Naprawiono system ekonomii (duplikacja monet)
+  - Naprawiono komendy AI (timeout errors)
+  - Naprawiono tempban (niepoprawne czas)
+  - Zaktualizowano wszystkie zależności
+
+### **v1.0.0 - Initial Release (05.11.2024)**
+**🚀 Pierwsze wydanie bota**
+
+#### Główne funkcje:
+- ✅ **65 komend podstawowych:**
+  - Moderacja: ban, kick, mute, warn
+  - Gry: 5 podstawowych gier
+  - Ekonomia: balance, daily, work, shop
+  - Muzyka: play, stop, skip, queue
+  - Utility: ping, help, serverinfo, userinfo
+  
+- ✅ **Systemy:**
+  - System ekonomii z walutą i sklepem
+  - System poziomów (XP za wiadomości)
+  - System statystyk użytkowników i serwera
+  
+- ✅ **Integracje:**
+  - OpenAI API dla komend AI (chat, code)
+  - YouTube download z Google Drive
+  - Odtwarzacz muzyki z YouTube
+  
+- ✅ **Automoderacja:**
+  - Anti-spam system
+  - Word filter
+  - Auto-role na dołączenie
+  - Welcome/goodbye messages
 
 ---
 
