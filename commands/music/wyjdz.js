@@ -2,8 +2,8 @@ const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('skip')
-    .setDescription('Pomiń aktualny utwór'),
+    .setName('wyjdz')
+    .setDescription('Opuść kanał głosowy'),
   async execute(interaction, args, client) {
     const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
     const member = isSlash ? interaction.member : interaction.member;
@@ -19,7 +19,7 @@ module.exports = {
     }
 
     if (!client.musicQueue || !client.musicQueue.has(guild.id)) {
-      const message = '❌ Nie gram żadnej muzyki!';
+      const message = '❌ Nie jestem połączony z kanałem głosowym!';
       if (isSlash) {
         return await interaction.reply(message);
       } else {
@@ -29,24 +29,15 @@ module.exports = {
 
     const queue = client.musicQueue.get(guild.id);
     
-    if (queue.queue.length <= 1) {
-      if (queue.ffmpeg) queue.ffmpeg.kill();
-      queue.player.stop();
-      queue.queue = [];
-      const message = '⏭️ Pominięto ostatni utwór. Dodaj kolejne lub użyj /wyjdz aby opuścić kanał';
-      if (isSlash) {
-        return await interaction.reply(message);
-      } else {
-        return interaction.reply(message);
-      }
-    }
-
+    if (queue.ffmpeg) queue.ffmpeg.kill();
     queue.player.stop();
+    queue.connection.destroy();
+    client.musicQueue.delete(guild.id);
 
     const embed = new EmbedBuilder()
-      .setColor('#3498DB')
-      .setTitle('⏭️ Pominięto utwór')
-      .setDescription('Odtwarzam następny utwór z kolejki')
+      .setColor('#E74C3C')
+      .setTitle('👋 Wychodzę z kanału')
+      .setDescription('Do zobaczenia! Użyj /play aby ponownie odtworzyć muzykę')
       .setTimestamp();
 
     if (isSlash) {

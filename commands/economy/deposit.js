@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const economyPath = path.join(__dirname, '../../data/economy.json');
+const settingsPath = path.join(__dirname, '../../data/economySettings.json');
 
 function getEconomy() {
   if (!fs.existsSync(economyPath)) {
@@ -13,6 +14,21 @@ function getEconomy() {
 
 function saveEconomy(economy) {
   fs.writeFileSync(economyPath, JSON.stringify(economy, null, 2));
+}
+
+function getGuildSettings(guildId) {
+  if (!fs.existsSync(settingsPath)) {
+    fs.writeFileSync(settingsPath, '{}');
+  }
+  const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  if (!settings[guildId]) {
+    settings[guildId] = {
+      work: { min: 150, max: 900 },
+      daily: { min: 500, max: 1000 },
+      bank: { limit: 100000 }
+    };
+  }
+  return settings[guildId];
 }
 
 module.exports = {
@@ -40,6 +56,18 @@ module.exports = {
       if (amount > economy[userId].balance) {
         return await interaction.reply({ 
           content: `❌ Nie masz wystarczająco gotówki! Masz: ${economy[userId].balance} 🪙`, 
+          ephemeral: true 
+        });
+      }
+
+      const guildSettings = getGuildSettings(interaction.guild.id);
+      const bankLimit = guildSettings.bank.limit;
+      const currentBank = economy[userId].bank || 0;
+      
+      if (currentBank + amount > bankLimit) {
+        const canDeposit = bankLimit - currentBank;
+        return await interaction.reply({ 
+          content: `❌ Limit banku to ${bankLimit} 🪙! Możesz wpłacić maksymalnie ${canDeposit} 🪙`, 
           ephemeral: true 
         });
       }

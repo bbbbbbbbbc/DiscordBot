@@ -20,7 +20,8 @@ function getGuildSettings(guildId) {
   if (!settings[guildId]) {
     settings[guildId] = {
       work: { min: 150, max: 900 },
-      daily: { min: 500, max: 1000 }
+      daily: { min: 500, max: 1000 },
+      bank: { limit: 100000 }
     };
     saveSettings(settings);
   }
@@ -69,6 +70,16 @@ module.exports = {
             .setMaxValue(10000)))
     .addSubcommand(subcommand =>
       subcommand
+        .setName('bank')
+        .setDescription('Ustaw limit banku')
+        .addIntegerOption(option =>
+          option.setName('limit')
+            .setDescription('Maksymalna kwota w banku (domyślnie: 100000)')
+            .setRequired(true)
+            .setMinValue(1000)
+            .setMaxValue(10000000)))
+    .addSubcommand(subcommand =>
+      subcommand
         .setName('reset')
         .setDescription('Resetuj ustawienia do domyślnych')),
 
@@ -93,7 +104,8 @@ module.exports = {
     if (!settings[guildId]) {
       settings[guildId] = {
         work: { min: 150, max: 900 },
-        daily: { min: 500, max: 1000 }
+        daily: { min: 500, max: 1000 },
+        bank: { limit: 100000 }
       };
     }
 
@@ -114,9 +126,14 @@ module.exports = {
             name: '🎁 Daily (/daily)',
             value: `Min: **${guildSettings.daily.min} 🪙**\nMax: **${guildSettings.daily.max} 🪙**`,
             inline: true
+          },
+          {
+            name: '🏦 Bank (/deposit)',
+            value: `Limit: **${guildSettings.bank.limit} 🪙**`,
+            inline: true
           }
         )
-        .setFooter({ text: 'Używaj /ekonomia-ustawienia work/daily aby zmienić' })
+        .setFooter({ text: 'Używaj /ekonomia-ustawienia work/daily/bank aby zmienić' })
         .setTimestamp();
 
       return await interaction.reply({ embeds: [embed] });
@@ -176,10 +193,27 @@ module.exports = {
       return await interaction.reply({ embeds: [embed] });
     }
 
+    if (subcommand === 'bank') {
+      const limit = interaction.options.getInteger('limit');
+
+      settings[guildId].bank = { limit };
+      saveSettings(settings);
+
+      const embed = new EmbedBuilder()
+        .setColor('#00FF00')
+        .setTitle('✅ Zaktualizowano limit banku')
+        .setDescription(`Limit banku ustawiony na: **${limit} 🪙**`)
+        .setFooter({ text: 'Użytkownicy nie będą mogli wpłacić więcej do banku' })
+        .setTimestamp();
+
+      return await interaction.reply({ embeds: [embed] });
+    }
+
     if (subcommand === 'reset') {
       settings[guildId] = {
         work: { min: 150, max: 900 },
-        daily: { min: 500, max: 1000 }
+        daily: { min: 500, max: 1000 },
+        bank: { limit: 100000 }
       };
       saveSettings(settings);
 
@@ -196,6 +230,11 @@ module.exports = {
           {
             name: '🎁 Daily',
             value: 'Min: 500 🪙 | Max: 1000 🪙',
+            inline: false
+          },
+          {
+            name: '🏦 Bank',
+            value: 'Limit: 100000 🪙',
             inline: false
           }
         )

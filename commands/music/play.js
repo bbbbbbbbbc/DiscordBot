@@ -5,7 +5,6 @@ const youtubedl = require('youtube-dl-exec');
 const ytSearch = require('yt-search');
 const { spawn } = require('child_process');
 const { getUncachableSpotifyClient } = require('../../utils/spotify');
-const { getData } = require('spotify-url-info');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -69,16 +68,33 @@ module.exports = {
           }
           
           try {
-            console.log('[PLAY] Getting Spotify playlist data...');
-            const playlistInfo = await getData(`https://open.spotify.com/playlist/${playlistId}`);
+            console.log('[PLAY] Getting Spotify playlist data via SDK...');
+            const spotify = await getUncachableSpotifyClient();
+            const playlistData = await spotify.playlists.getPlaylist(playlistId);
             
-            if (!playlistInfo || !playlistInfo.tracks || !playlistInfo.tracks.items) {
+            if (!playlistData || !playlistData.tracks || !playlistData.tracks.items) {
               throw new Error('Nie można pobrać danych playlisty');
             }
             
-            console.log('[PLAY] Spotify playlist:', playlistInfo.name, 'Tracks:', playlistInfo.tracks.items.length);
+            console.log('[PLAY] Spotify playlist:', playlistData.name, 'Tracks:', playlistData.tracks.items.length);
             
-            for (const item of playlistInfo.tracks.items) {
+            let tracksToFetch = playlistData.tracks.items;
+            let nextUrl = playlistData.tracks.next;
+            
+            while (nextUrl) {
+              const offset = tracksToFetch.length;
+              const nextBatch = await spotify.playlists.getPlaylistItems(playlistId, { limit: 50, offset });
+              if (nextBatch && nextBatch.items && nextBatch.items.length > 0) {
+                tracksToFetch = tracksToFetch.concat(nextBatch.items);
+                nextUrl = nextBatch.next;
+              } else {
+                break;
+              }
+            }
+            
+            console.log('[PLAY] Total tracks after pagination:', tracksToFetch.length);
+            
+            for (const item of tracksToFetch) {
               if (item.track && item.track.name && item.track.artists && item.track.artists[0]) {
                 const trackName = item.track.name;
                 const artistName = item.track.artists[0].name;
@@ -111,7 +127,7 @@ module.exports = {
               }
             }
             
-            const message = `✅ Dodano ${songs.length} utworów z playlisty Spotify: **${playlistInfo.name}**`;
+            const message = `✅ Dodano ${songs.length} utworów z playlisty Spotify: **${playlistData.name}**`;
             if (isSlash) {
               await interaction.editReply(message);
             } else {
@@ -131,7 +147,8 @@ module.exports = {
           console.log('[PLAY] Spotify track detected:', trackId);
           
           try {
-            const trackInfo = await getData(`https://open.spotify.com/track/${trackId}`);
+            const spotify = await getUncachableSpotifyClient();
+            const trackInfo = await spotify.tracks.get(trackId);
             
             if (!trackInfo || !trackInfo.name || !trackInfo.artists || !trackInfo.artists[0]) {
               throw new Error('Nie można pobrać danych utworu');
@@ -270,13 +287,19 @@ module.exports = {
       
       if (client.musicQueue.has(guild.id)) {
         const queue = client.musicQueue.get(guild.id);
+        const wasEmpty = queue.queue.length === 0;
         queue.queue.push(...songs);
         
-        const message = `✅ Dodano ${songs.length} utwor${songs.length === 1 ? '' : 'ów'} do kolejki! (Pozycja: ${queue.queue.length - songs.length + 1})`;
-        if (isSlash) {
-          await interaction.followUp(message);
+        if (wasEmpty && queue.player.state.status === AudioPlayerStatus.Idle) {
+          console.log('[PLAY] Queue was empty and player idle, starting playback');
+          await playNextSong(guild.id, client, isSlash, interaction, channel);
         } else {
-          channel.send(message);
+          const message = `✅ Dodano ${songs.length} utwor${songs.length === 1 ? '' : 'ów'} do kolejki! (Pozycja: ${queue.queue.length - songs.length + 1})`;
+          if (isSlash) {
+            await interaction.followUp(message);
+          } else {
+            channel.send(message);
+          }
         }
         return;
       }
@@ -312,10 +335,8 @@ module.exports = {
           console.log('[PLAY] Playing next song in queue');
           await playNextSong(guild.id, client, false, null, queue.channel);
         } else {
-          console.log('[PLAY] Queue empty, disconnecting');
+          console.log('[PLAY] Queue empty, waiting for more songs');
           if (queue.ffmpeg) queue.ffmpeg.kill();
-          queue.connection.destroy();
-          client.musicQueue.delete(guild.id);
         }
       });
 
@@ -445,9 +466,8 @@ async function playNextSong(guildId, client, isSlash, interaction, channel) {
     if (queue.queue.length > 0) {
       await playNextSong(guildId, client, false, null, queue.channel);
     } else {
+      console.log('[PLAY] Queue empty after error, waiting for more songs');
       if (queue.ffmpeg) queue.ffmpeg.kill();
-      queue.connection.destroy();
-      client.musicQueue.delete(guildId);
     }
   }
 }
