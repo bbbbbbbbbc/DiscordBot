@@ -16,6 +16,10 @@ Najpotężniejszy bot Discord napisany w Node.js z 155 komendami w 12 kategoriac
 - **2 komendy YouTube** (download do Google Drive, powiadomienia)
 
 ## Ostatnie zmiany
+- 2025-11-13: **Naprawiono system muzyczny**
+  - ✅ **Dodano GuildVoiceStates intent:** Bot teraz widzi kto jest na kanałach głosowych
+  - ✅ **Naprawiono /play:** Bot poprawnie dołącza do kanałów głosowych
+  - ✅ **Wszystkie komendy muzyczne działają:** play, stop, skip, pause, resume, volume, queue
 - 2025-11-13: **Dodano opcje wysyłania pliku do `/download`**
   - 📤 **3 opcje wysyłania:** Google Drive, Discord (załącznik), lub oba jednocześnie
   - 💬 **Discord attachment:** pliki <25MB można wysłać bezpośrednio na czat
