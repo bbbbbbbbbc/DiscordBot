@@ -42,9 +42,7 @@ module.exports = {
 
     try {
       if (isSlash) {
-        await interaction.reply('🔍 Szukam utworu...');
-      } else {
-        await channel.send('🔍 Szukam utworu...');
+        await interaction.deferReply();
       }
 
       let songs = [];
@@ -53,12 +51,15 @@ module.exports = {
       console.log('[PLAY] Query:', query, 'Type:', validationType);
       
       if (query.includes('spotify.com')) {
-        const spotifyUrlMatch = query.match(/playlist\/([a-zA-Z0-9]+)/);
+        const spotifyPlaylistMatch = query.match(/playlist\/([a-zA-Z0-9]+)/);
+        const spotifyAlbumMatch = query.match(/album\/([a-zA-Z0-9]+)/);
         const spotifyTrackMatch = query.match(/track\/([a-zA-Z0-9]+)/);
         
-        if (spotifyUrlMatch) {
-          const playlistId = spotifyUrlMatch[1];
-          console.log('[PLAY] Spotify playlist detected:', playlistId);
+        if (spotifyPlaylistMatch || spotifyAlbumMatch) {
+          const isPlaylist = !!spotifyPlaylistMatch;
+          const id = isPlaylist ? spotifyPlaylistMatch[1] : spotifyAlbumMatch[1];
+          const type = isPlaylist ? 'playlist' : 'album';
+          console.log(`[PLAY] Spotify ${type} detected:`, id);
           
           const updateMsg = '📥 Pobieram playlistę Spotify...';
           if (isSlash) {
@@ -68,36 +69,61 @@ module.exports = {
           }
           
           try {
-            console.log('[PLAY] Getting Spotify playlist data via SDK...');
+            console.log(`[PLAY] Getting Spotify ${type} data via SDK...`);
             const spotify = await getUncachableSpotifyClient();
-            const playlistData = await spotify.playlists.getPlaylist(playlistId);
             
-            if (!playlistData || !playlistData.tracks || !playlistData.tracks.items) {
-              throw new Error('Nie można pobrać danych playlisty');
-            }
+            let data, tracksToFetch = [], name;
             
-            console.log('[PLAY] Spotify playlist:', playlistData.name, 'Tracks:', playlistData.tracks.items.length);
-            
-            let tracksToFetch = playlistData.tracks.items;
-            let nextUrl = playlistData.tracks.next;
-            
-            while (nextUrl && tracksToFetch.length < 1000000) {
-              const offset = tracksToFetch.length;
-              const nextBatch = await spotify.playlists.getPlaylistItems(playlistId, { limit: 50, offset });
-              if (nextBatch && nextBatch.items && nextBatch.items.length > 0) {
-                tracksToFetch = tracksToFetch.concat(nextBatch.items);
-                nextUrl = nextBatch.next;
-              } else {
-                break;
+            if (isPlaylist) {
+              data = await spotify.playlists.getPlaylist(id);
+              if (!data || !data.tracks) {
+                throw new Error('Nie można pobrać danych playlisty');
               }
+              name = data.name;
+              tracksToFetch = data.tracks.items || [];
+              let nextUrl = data.tracks.next;
+              
+              while (nextUrl && tracksToFetch.length < 1000000) {
+                const offset = tracksToFetch.length;
+                const nextBatch = await spotify.playlists.getPlaylistItems(id, { limit: 50, offset });
+                if (nextBatch && nextBatch.items && nextBatch.items.length > 0) {
+                  tracksToFetch = tracksToFetch.concat(nextBatch.items);
+                  nextUrl = nextBatch.next;
+                } else {
+                  break;
+                }
+              }
+            } else {
+              data = await spotify.albums.get(id);
+              if (!data || !data.tracks) {
+                throw new Error('Nie można pobrać danych albumu');
+              }
+              name = data.name;
+              let albumTracks = data.tracks.items || [];
+              let nextUrl = data.tracks.next;
+              
+              while (nextUrl && albumTracks.length < 1000000) {
+                const offset = albumTracks.length;
+                const nextBatch = await spotify.albums.tracks(id, { limit: 50, offset });
+                if (nextBatch && nextBatch.items && nextBatch.items.length > 0) {
+                  albumTracks = albumTracks.concat(nextBatch.items);
+                  nextUrl = nextBatch.next;
+                } else {
+                  break;
+                }
+              }
+              
+              tracksToFetch = albumTracks.map(track => ({ track }));
             }
             
-            console.log('[PLAY] Total tracks after pagination:', tracksToFetch.length);
+            console.log(`[PLAY] Spotify ${type}: ${name}, Tracks: ${tracksToFetch.length}`);
             
             for (const item of tracksToFetch) {
-              if (item.track && item.track.name && item.track.artists && item.track.artists[0]) {
+              try {
+                if (!item.track || !item.track.name) continue;
+                
                 const trackName = item.track.name;
-                const artistName = item.track.artists[0].name;
+                const artistName = item.track.artists && item.track.artists[0] ? item.track.artists[0].name : 'Unknown Artist';
                 const searchQuery = `${artistName} - ${trackName}`;
                 
                 console.log('[PLAY] Searching YouTube for:', searchQuery);
@@ -115,11 +141,14 @@ module.exports = {
                 } else {
                   console.log('[PLAY] Track not found on YouTube:', searchQuery);
                 }
+              } catch (trackError) {
+                console.log('[PLAY] Error processing track, skipping:', trackError.message);
+                continue;
               }
             }
             
             if (songs.length === 0) {
-              const message = '❌ Nie znaleziono utworów w playliście Spotify!';
+              const message = `❌ Nie znaleziono utworów w ${type === 'playlist' ? 'playliście' : 'albumie'} Spotify!`;
               if (isSlash) {
                 return await interaction.editReply(message);
               } else {
@@ -127,7 +156,7 @@ module.exports = {
               }
             }
             
-            const message = `✅ Dodano ${songs.length} utworów z playlisty Spotify: **${playlistData.name}**`;
+            const message = `✅ Dodano ${songs.length} utworów z ${type === 'playlist' ? 'playlisty' : 'albumu'} Spotify: **${name}**`;
             if (isSlash) {
               await interaction.editReply(message);
             } else {
