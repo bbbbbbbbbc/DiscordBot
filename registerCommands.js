@@ -5,6 +5,25 @@ const path = require('path');
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID || 'YOUR_CLIENT_ID';
 
+async function retryRequest(fn, retries = 3, commandName = 'Unknown') {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isLastAttempt = attempt === retries;
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      
+      if (isLastAttempt) {
+        throw error;
+      }
+      
+      console.log(`   ⚠️ Próba ${attempt}/${retries} nie powiodła się dla "${commandName}"`);
+      console.log(`   ⏳ Czekam ${delay/1000}s przed ponowną próbą...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
 const commands = [];
 const commandFolders = ['moderation', 'games', 'utility', 'ai', 'youtube', 'economy', 'leveling', 'music', 'reminders', 'polls', 'fun', 'stats', 'social', 'misc'];
 
@@ -54,13 +73,26 @@ const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN);
       console.log('\n⚡ Rejestruję GLOBAL (pierwsze 100 komend)...');
       
       const first100 = commands.slice(0, 100);
-      const data = await rest.put(
-        Routes.applicationCommands(CLIENT_ID),
-        { body: first100 },
-      );
       
-      console.log(`✅ Zarejestrowano ${data.length}/100 komend GLOBALNIE`);
-      console.log(`⚠️ Brakuje ${commands.length - 100} komend (użyj GUILD_ID aby je dodać)`);
+      try {
+        const data = await retryRequest(
+          async () => {
+            return await rest.put(
+              Routes.applicationCommands(CLIENT_ID),
+              { body: first100 }
+            );
+          },
+          3,
+          'Global Commands (100)'
+        );
+        
+        console.log(`✅ Zarejestrowano ${data.length}/100 komend GLOBALNIE`);
+        console.log(`⚠️ Brakuje ${commands.length - 100} komend (użyj GUILD_ID aby je dodać)`);
+      } catch (error) {
+        console.error(`\n❌ BŁĄD: Nie udało się zarejestrować komend globalnych po 3 próbach`);
+        console.error(`   Szczegóły: ${error.message}`);
+        throw error;
+      }
     } else {
       console.log(`\n🎯 ROZWIĄZANIE PROBLEMU BASE_TYPE_MAX_LENGTH`);
       console.log('='.repeat(70));
@@ -69,68 +101,124 @@ const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN);
       console.log(`Rozwiązanie: HYBRYDOWE (PUT 78 + POST ${commands.length - 78})`);
       console.log('='.repeat(70) + '\n');
       
-      // KROK 1: PUT pierwszych 78 komend (sprawdzone że działa)
       const batch1 = commands.slice(0, 78);
       console.log(`📤 KROK 1/2: Rejestruję bazę ${batch1.length} komend (PUT)...`);
       
-      await rest.put(
-        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-        { body: batch1 }
-      );
-      
-      console.log(`✅ Zarejestrowano bazę: ${batch1.length} komend\n`);
+      try {
+        await retryRequest(
+          async () => {
+            return await rest.put(
+              Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+              { body: batch1 }
+            );
+          },
+          3,
+          `Batch 1 (${batch1.length} komend)`
+        );
+        console.log(`✅ Zarejestrowano bazę: ${batch1.length} komend\n`);
+      } catch (error) {
+        console.error(`\n❌ BŁĄD KRYTYCZNY: Nie udało się zarejestrować bazy komend po 3 próbach`);
+        console.error(`   Szczegóły: ${error.message}`);
+        throw error;
+      }
       
       // Opóźnienie między krokami
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // KROK 2: POST pozostałych komend
       const batch2 = commands.slice(78);
       console.log(`📤 KROK 2/2: Dodaję pozostałe ${batch2.length} komend (POST)...`);
       
       let added = 0;
       let failed = 0;
+      const successfulCommands = [];
+      const failedCommands = [];
       
       for (let i = 0; i < batch2.length; i++) {
+        const commandName = batch2[i].name;
+        
         try {
-          await rest.post(
-            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-            { body: batch2[i] }
+          await retryRequest(
+            async () => {
+              return await rest.post(
+                Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+                { body: batch2[i] }
+              );
+            },
+            3,
+            commandName
           );
+          
           added++;
+          successfulCommands.push(commandName);
           
           if ((i + 1) % 10 === 0 || i === batch2.length - 1) {
             process.stdout.write(`\r   Progress: ${i + 1}/${batch2.length} (${added} sukces, ${failed} błąd)   `);
           }
           
-          // Rate limit: 300ms delay
           if (i < batch2.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 300));
           }
           
         } catch (error) {
           failed++;
-          console.log(`\n   ❌ ${batch2[i].name}: ${error.message.substring(0, 60)}`);
+          failedCommands.push({ name: commandName, error: error.message });
+          console.log(`\n   ❌ ${commandName}: Wszystkie 3 próby nie powiodły się`);
+          console.log(`      Błąd: ${error.message.substring(0, 80)}`);
         }
       }
       
-      console.log(`\n\n✅ Dodano: ${added}/${batch2.length} komend\n`);
+      console.log(`\n`);
       
-      // Weryfikacja
       const all = await rest.get(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID));
       
       console.log('='.repeat(70));
+      console.log('📊 SZCZEGÓŁOWY RAPORT REJESTRACJI KOMEND');
+      console.log('='.repeat(70));
+      
+      console.log(`\n📦 KROK 1 (PUT): ${batch1.length} komend - ✅ SUKCES`);
+      
+      console.log(`\n📦 KROK 2 (POST): ${batch2.length} komend`);
+      console.log(`   ✅ Zarejestrowano pomyślnie: ${added}`);
+      console.log(`   ❌ Nie udało się zarejestrować: ${failed}`);
+      
+      if (failedCommands.length > 0) {
+        console.log(`\n❌ KOMENDY, KTÓRE NIE ZOSTAŁY ZAREJESTROWANE (${failedCommands.length}):`);
+        failedCommands.forEach((cmd, idx) => {
+          console.log(`   ${idx + 1}. ${cmd.name}`);
+          console.log(`      Błąd: ${cmd.error.substring(0, 100)}`);
+        });
+      }
+      
+      if (successfulCommands.length > 0 && successfulCommands.length <= 10) {
+        console.log(`\n✅ POMYŚLNIE ZAREJESTROWANE KOMENDY (${successfulCommands.length}):`);
+        successfulCommands.forEach((name, idx) => {
+          console.log(`   ${idx + 1}. ${name}`);
+        });
+      } else if (successfulCommands.length > 10) {
+        console.log(`\n✅ POMYŚLNIE ZAREJESTROWANE KOMENDY: ${successfulCommands.length}`);
+        console.log(`   (Lista zbyt długa do wyświetlenia)`);
+      }
+      
+      console.log(`\n${'='.repeat(70)}`);
       console.log('🎊 WYNIK KOŃCOWY');
       console.log('='.repeat(70));
-      console.log(`Całkowita liczba komend: ${all.length}`);
+      console.log(`Całkowita liczba komend w Discord: ${all.length}`);
       console.log(`Oczekiwano: ${commands.length}`);
+      console.log(`Batch 1 (PUT): ${batch1.length} komend`);
+      console.log(`Batch 2 (POST): ${added}/${batch2.length} komend`);
+      console.log(`Całkowity sukces: ${batch1.length + added}/${commands.length}`);
       
       if (all.length === commands.length) {
-        console.log('\n🎉 SUKCES! Wszystkie 156 komend działają!');
+        console.log(`\n🎉 SUKCES! Wszystkie ${commands.length} komend zostały zarejestrowane!`);
         console.log('✅ Problem BASE_TYPE_MAX_LENGTH rozwiązany');
-        console.log('💡 Metoda: PUT (78) + POST (78) = 156 komend\n');
+        console.log('✅ Retry logic obsłużył wszystkie timeouty');
+        console.log(`💡 Metoda: PUT (${batch1.length}) + POST (${batch2.length}) z retry logic\n`);
       } else if (all.length > 0) {
         console.log(`\n⚠️ Zarejestrowano ${all.length}/${commands.length}`);
         console.log(`Brakuje: ${commands.length - all.length} komend\n`);
+        if (failedCommands.length > 0) {
+          console.log(`💡 Sprawdź błędy powyżej dla nieudanych komend`);
+        }
       }
       
       console.log('='.repeat(70));

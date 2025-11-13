@@ -18,18 +18,27 @@ The bot is built on Node.js and utilizes modern Discord.js slash commands for en
 **Solution:** Hybrid registration approach implemented in `registerCommands.js`:
 1. **PUT** first 78 commands (bulk registration, replaces all existing)
 2. **POST** remaining 78 commands individually (adds without replacing)
-3. Result: All 156 commands successfully registered
+3. **Retry Logic**: 3 attempts with exponential backoff (1s, 2s, 4s) for Discord API timeouts
+4. Result: All 156 commands successfully registered
 
 **Usage:**
 ```bash
 node registerCommands.js
 ```
 
+**Important Notes:**
+- Requires `GUILD_ID` environment variable to be set for hybrid registration
+- Script may take 2-4 minutes to complete due to rate limiting
+- If Discord API is experiencing issues, retry after a few minutes
+- Check final report for any failed commands
+
 **Technical Details:**
 - PUT method: Bulk overwrites all guild commands (fast, but limited to ~78-100 commands)
 - POST method: Creates/updates individual commands (slower, but no limit)
 - Hybrid approach combines speed of PUT with reliability of POST
 - Includes rate limiting (300ms delay between POST requests) to avoid API throttling
+- Retry logic handles temporary Discord API timeouts gracefully
+- Detailed progress tracking and final report show successful/failed commands
 - Automatic verification confirms all 156 commands are registered
 
 ### UI/UX Decisions
@@ -46,7 +55,7 @@ node registerCommands.js
 - **Error Handling:** Comprehensive error handling mechanisms prevent bot crashes and provide informative user feedback.
 
 ### Feature Specifications
-- **Moderation:** Ban, kick, mute, warn, slowmode, automod, word filter.
+- **Moderation:** Ban, kick, mute, warn, slowmode, automod, word filter, announcements (with custom embeds, colors, and mentions).
 - **Games:** 15 diverse games including gambling, multiplayer, and trivia.
 - **Economy:** Virtual currency, daily rewards, work, shop, inventory, leaderboard.
 - **Leveling:** XP gain per message, rank display, level leaderboard.
