@@ -261,10 +261,18 @@ node index.js
 
 ### **Muzyka:**
 ```
-/play https://youtube.com/...  - Odtwórz z YouTube
-/skip                          - Pomiń utwór
-/queue                         - Zobacz kolejkę
-/volume 50                     - Ustaw głośność na 50%
+/play Believer                              - Wyszukaj i odtwórz utwór
+/play https://youtube.com/watch?v=...       - Odtwórz z YouTube
+/play https://youtube.com/playlist?list=... - Cała playlista YouTube
+/play https://open.spotify.com/playlist/... - Cała playlista Spotify
+/play https://open.spotify.com/track/...    - Utwór ze Spotify
+/skip                                       - Pomiń utwór
+/queue                                      - Zobacz kolejkę
+/volume 50                                  - Ustaw głośność na 50%
+/pause                                      - Wstrzymaj
+/resume                                     - Wznów
+/stop                                       - Zatrzymaj i wyjdź
+/join                                       - Dołącz do kanału głosowego
 ```
 
 ### **AI:**
@@ -608,6 +616,14 @@ node index.js
 ---
 
 ## 📝 Changelog
+
+### **v2.4.0 - Playlist Support**
+- 🎵 **Obsługa playlist:** YouTube, Spotify i innych platform
+- ✅ **Spotify playlists:** Pełna paginacja (nieograniczona liczba utworów)
+- ✅ **YouTube playlists:** Automatyczne dodawanie wszystkich utworów
+- ✅ **System kolejki:** Automatyczne odtwarzanie następnych utworów
+- ✅ **Inteligentne wyszukiwanie:** Spotify tracks → YouTube streaming
+- 🔧 **Bezpieczne zarządzanie:** Auto-cleanup ffmpeg procesów
 
 ### **v2.3.0 - Music System Fix**
 - 🎵 **Naprawiono system muzyczny:** `/play` działa na 100%

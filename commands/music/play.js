@@ -4,14 +4,15 @@ const play = require('play-dl');
 const youtubedl = require('youtube-dl-exec');
 const ytSearch = require('yt-search');
 const { spawn } = require('child_process');
+const { getUncachableSpotifyClient } = require('../../utils/spotify');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('play')
-    .setDescription('Odtwórz muzykę z YouTube')
+    .setDescription('Odtwórz muzykę z YouTube lub dodaj playlistę')
     .addStringOption(option =>
       option.setName('utwor')
-        .setDescription('Link do YouTube lub nazwa utworu')
+        .setDescription('Link do YouTube/Spotify lub nazwa utworu')
         .setRequired(true)
     ),
   async execute(interaction, args, client) {
@@ -34,7 +35,7 @@ module.exports = {
       query = interaction.options.getString('utwor');
     } else {
       if (!args[0]) {
-        return interaction.reply('❌ Podaj link do YouTube lub nazwę utworu!');
+        return interaction.reply('❌ Podaj link do YouTube/Spotify lub nazwę utworu!');
       }
       query = args.join(' ');
     }
@@ -46,22 +47,202 @@ module.exports = {
         await channel.send('🔍 Szukam utworu...');
       }
 
-      let videoUrl;
-      let videoInfo;
+      let songs = [];
       
       const validationType = play.yt_validate(query);
       console.log('[PLAY] Query:', query, 'Type:', validationType);
       
-      if (validationType === 'video') {
-        videoUrl = query;
-        console.log('[PLAY] Direct video URL:', videoUrl);
-      } else if (validationType === 'playlist') {
-        const message = '❌ Playlisty nie są obsługiwane. Podaj link do pojedynczego utworu.';
-        if (isSlash) {
-          return await interaction.followUp(message);
-        } else {
-          return channel.send(message);
+      if (query.includes('spotify.com')) {
+        const spotifyUrlMatch = query.match(/playlist\/([a-zA-Z0-9]+)/);
+        const spotifyTrackMatch = query.match(/track\/([a-zA-Z0-9]+)/);
+        
+        if (spotifyUrlMatch) {
+          const playlistId = spotifyUrlMatch[1];
+          console.log('[PLAY] Spotify playlist detected:', playlistId);
+          
+          const updateMsg = '📥 Pobieram playlistę Spotify...';
+          if (isSlash) {
+            await interaction.editReply(updateMsg);
+          } else {
+            await channel.send(updateMsg);
+          }
+          
+          try {
+            const spotify = await getUncachableSpotifyClient();
+            const playlistData = await spotify.playlists.getPlaylist(playlistId);
+            
+            console.log('[PLAY] Spotify playlist:', playlistData.name);
+            
+            let allTracks = [];
+            let offset = 0;
+            const limit = 100;
+            
+            while (true) {
+              const tracksPage = await spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, limit, offset);
+              allTracks.push(...tracksPage.items);
+              
+              console.log('[PLAY] Fetched', tracksPage.items.length, 'tracks (offset:', offset, ')');
+              
+              if (tracksPage.items.length < limit || !tracksPage.next) {
+                break;
+              }
+              offset += limit;
+            }
+            
+            console.log('[PLAY] Total tracks in playlist:', allTracks.length);
+            
+            for (const item of allTracks) {
+              if (item.track && item.track.name && item.track.artists && item.track.artists[0]) {
+                const trackName = item.track.name;
+                const artistName = item.track.artists[0].name;
+                const searchQuery = `${artistName} - ${trackName}`;
+                
+                console.log('[PLAY] Searching YouTube for:', searchQuery);
+                const searchResult = await play.search(searchQuery, { limit: 1 });
+                
+                if (searchResult && searchResult.length > 0) {
+                  const video = searchResult[0];
+                  songs.push({
+                    title: video.title,
+                    url: video.url,
+                    channel: { name: video.channel.name },
+                    durationRaw: video.durationRaw,
+                    thumbnails: video.thumbnails
+                  });
+                } else {
+                  console.log('[PLAY] Track not found on YouTube:', searchQuery);
+                }
+              }
+            }
+            
+            if (songs.length === 0) {
+              const message = '❌ Nie znaleziono utworów w playliście Spotify!';
+              if (isSlash) {
+                return await interaction.editReply(message);
+              } else {
+                return channel.send(message);
+              }
+            }
+            
+            const message = `✅ Dodano ${songs.length} utworów z playlisty Spotify: **${playlistData.name}**`;
+            if (isSlash) {
+              await interaction.editReply(message);
+            } else {
+              await channel.send(message);
+            }
+          } catch (error) {
+            console.error('[PLAY] Spotify error:', error);
+            const message = '❌ Błąd podczas pobierania playlisty Spotify! Upewnij się, że Spotify jest połączony.';
+            if (isSlash) {
+              return await interaction.editReply(message);
+            } else {
+              return channel.send(message);
+            }
+          }
+        } else if (spotifyTrackMatch) {
+          const trackId = spotifyTrackMatch[1];
+          console.log('[PLAY] Spotify track detected:', trackId);
+          
+          try {
+            const spotify = await getUncachableSpotifyClient();
+            const trackData = await spotify.tracks.get(trackId);
+            
+            const trackName = trackData.name;
+            const artistName = trackData.artists[0].name;
+            const searchQuery = `${artistName} - ${trackName}`;
+            
+            console.log('[PLAY] Searching YouTube for:', searchQuery);
+            const searchResult = await play.search(searchQuery, { limit: 1 });
+            
+            if (!searchResult || searchResult.length === 0) {
+              const message = '❌ Nie znaleziono utworu na YouTube!';
+              if (isSlash) {
+                return await interaction.editReply(message);
+              } else {
+                return channel.send(message);
+              }
+            }
+            
+            const video = searchResult[0];
+            songs.push({
+              title: video.title,
+              url: video.url,
+              channel: { name: video.channel.name },
+              durationRaw: video.durationRaw,
+              thumbnails: video.thumbnails
+            });
+          } catch (error) {
+            console.error('[PLAY] Spotify error:', error);
+            const message = '❌ Błąd podczas pobierania utworu ze Spotify!';
+            if (isSlash) {
+              return await interaction.editReply(message);
+            } else {
+              return channel.send(message);
+            }
+          }
         }
+      } else if (validationType === 'playlist') {
+        console.log('[PLAY] YouTube playlist detected');
+        
+        const updateMsg = '📥 Pobieram playlistę YouTube...';
+        if (isSlash) {
+          await interaction.editReply(updateMsg);
+        } else {
+          await channel.send(updateMsg);
+        }
+        
+        try {
+          const playlistData = await play.playlist_info(query);
+          const videos = await playlistData.all_videos();
+          
+          console.log('[PLAY] YouTube playlist:', playlistData.title, 'Videos:', videos.length);
+          
+          for (const video of videos) {
+            songs.push({
+              title: video.title,
+              url: video.url,
+              channel: { name: video.channel.name },
+              durationRaw: video.durationRaw,
+              thumbnails: video.thumbnails
+            });
+          }
+          
+          if (songs.length === 0) {
+            const message = '❌ Playlista jest pusta!';
+            if (isSlash) {
+              return await interaction.editReply(message);
+            } else {
+              return channel.send(message);
+            }
+          }
+          
+          const message = `✅ Dodano ${songs.length} utworów z playlisty YouTube: **${playlistData.title}**`;
+          if (isSlash) {
+            await interaction.editReply(message);
+          } else {
+            await channel.send(message);
+          }
+        } catch (error) {
+          console.error('[PLAY] Playlist error:', error);
+          const message = '❌ Nie można pobrać playlisty YouTube!';
+          if (isSlash) {
+            return await interaction.editReply(message);
+          } else {
+            return channel.send(message);
+          }
+        }
+      } else if (validationType === 'video') {
+        console.log('[PLAY] Direct video URL:', query);
+        const videoInfo = await play.video_info(query);
+        const video = videoInfo.video_details;
+        
+        songs.push({
+          title: video.title,
+          url: video.url,
+          channel: { name: video.channel.name },
+          durationRaw: video.durationRaw,
+          thumbnails: video.thumbnails
+        });
       } else {
         console.log('[PLAY] Searching for:', query);
         const searchResult = await play.search(query, { limit: 1 });
@@ -70,82 +251,48 @@ module.exports = {
         if (!searchResult || searchResult.length === 0) {
           const message = '❌ Nie znaleziono utworu!';
           if (isSlash) {
-            return await interaction.followUp(message);
+            return await interaction.editReply(message);
           } else {
             return channel.send(message);
           }
         }
         
-        const firstResult = searchResult[0];
-        console.log('[PLAY] First result:', firstResult);
-        videoUrl = firstResult.url;
-        console.log('[PLAY] Video URL from search:', videoUrl);
-      }
-
-      if (!videoUrl) {
-        console.error('[PLAY] ERROR: videoUrl is undefined!');
-        throw new Error('Nie można uzyskać URL filmu');
-      }
-
-      console.log('[PLAY] Getting info for URL:', videoUrl);
-      
-      let videoData;
-      let stream;
-      
-      try {
-        const ytInfo = await youtubedl(videoUrl, {
-          dumpSingleJson: true,
-          noCheckCertificates: true,
-          noWarnings: true,
-          preferFreeFormats: true,
-          format: 'bestaudio'
+        const video = searchResult[0];
+        songs.push({
+          title: video.title,
+          url: video.url,
+          channel: { name: video.channel.name },
+          durationRaw: video.durationRaw,
+          thumbnails: video.thumbnails
         });
-        
-        console.log('[PLAY] Got video info:', ytInfo.title);
-        
-        if (!ytInfo.url) {
-          throw new Error('Nie można pobrać URL streamu audio');
+      }
+
+      if (songs.length === 0) {
+        const message = '❌ Nie znaleziono żadnych utworów!';
+        if (isSlash) {
+          return await interaction.editReply(message);
+        } else {
+          return channel.send(message);
         }
-        
-        const audioUrl = ytInfo.url;
-        console.log('[PLAY] Audio URL obtained');
-        
-        videoData = {
-          title: ytInfo.title || 'Nieznany',
-          url: videoUrl,
-          channel: { name: ytInfo.uploader || ytInfo.channel || 'Nieznany' },
-          durationRaw: ytInfo.duration ? new Date(ytInfo.duration * 1000).toISOString().substring(11, 19) : 'N/A',
-          thumbnails: ytInfo.thumbnail ? [{ url: ytInfo.thumbnail }] : [{ url: 'https://via.placeholder.com/120' }]
-        };
-        
-        console.log('[PLAY] Creating audio stream with ffmpeg...');
-        
-        const ffmpeg = spawn('ffmpeg', [
-          '-reconnect', '1',
-          '-reconnect_streamed', '1',
-          '-reconnect_delay_max', '5',
-          '-i', audioUrl,
-          '-analyzeduration', '0',
-          '-loglevel', '0',
-          '-f', 's16le',
-          '-ar', '48000',
-          '-ac', '2',
-          'pipe:1'
-        ], {
-          stdio: ['ignore', 'pipe', 'ignore']
-        });
-        
-        ffmpeg.on('error', (err) => {
-          console.error('[PLAY] FFmpeg error:', err);
-        });
-        
-        stream = ffmpeg.stdout;
-        
-        console.log('[PLAY] Audio stream created successfully');
-      } catch (error) {
-        console.error('[PLAY] Error:', error.message);
-        throw new Error(`Nie można odtworzyć: ${error.message}`);
       }
+
+      if (!client.musicQueue) client.musicQueue = new Map();
+      
+      if (client.musicQueue.has(guild.id)) {
+        const queue = client.musicQueue.get(guild.id);
+        queue.queue.push(...songs);
+        
+        const message = `✅ Dodano ${songs.length} utwor${songs.length === 1 ? '' : 'ów'} do kolejki! (Pozycja: ${queue.queue.length - songs.length + 1})`;
+        if (isSlash) {
+          await interaction.followUp(message);
+        } else {
+          channel.send(message);
+        }
+        return;
+      }
+
+      const firstSong = songs[0];
+      console.log('[PLAY] Playing first song:', firstSong.title);
 
       const connection = joinVoiceChannel({
         channelId: member.voice.channel.id,
@@ -154,37 +301,28 @@ module.exports = {
       });
 
       const player = createAudioPlayer();
-      const resource = createAudioResource(stream, {
-        inputType: StreamType.Raw,
-        inlineVolume: true
+      
+      client.musicQueue.set(guild.id, { 
+        connection, 
+        player, 
+        queue: songs,
+        channel: channel,
+        ffmpeg: null
       });
 
-      player.play(resource);
-      connection.subscribe(player);
+      await playNextSong(guild.id, client, isSlash, interaction, channel);
 
-      if (!client.musicQueue) client.musicQueue = new Map();
-      client.musicQueue.set(guild.id, { connection, player, queue: [videoData], ffmpeg });
-
-      const embed = new EmbedBuilder()
-        .setColor('#FF0000')
-        .setTitle('🎵 Teraz gra')
-        .setDescription(`[${videoData.title}](${videoData.url})`)
-        .addFields(
-          { name: '👤 Kanał', value: videoData.channel.name, inline: true },
-          { name: '⏱️ Czas', value: videoData.durationRaw, inline: true }
-        )
-        .setThumbnail(videoData.thumbnails[0].url)
-        .setTimestamp();
-
-      if (isSlash) {
-        await interaction.followUp({ embeds: [embed] });
-      } else {
-        channel.send({ embeds: [embed] });
-      }
-
-      player.on(AudioPlayerStatus.Idle, () => {
+      player.on(AudioPlayerStatus.Idle, async () => {
         const queue = client.musicQueue.get(guild.id);
-        if (queue) {
+        if (!queue) return;
+        
+        queue.queue.shift();
+        
+        if (queue.queue.length > 0) {
+          console.log('[PLAY] Playing next song in queue');
+          await playNextSong(guild.id, client, false, null, queue.channel);
+        } else {
+          console.log('[PLAY] Queue empty, disconnecting');
           if (queue.ffmpeg) queue.ffmpeg.kill();
           queue.connection.destroy();
           client.musicQueue.delete(guild.id);
@@ -217,3 +355,109 @@ module.exports = {
     }
   },
 };
+
+async function playNextSong(guildId, client, isSlash, interaction, channel) {
+  const queue = client.musicQueue.get(guildId);
+  if (!queue || queue.queue.length === 0) return;
+  
+  const song = queue.queue[0];
+  
+  try {
+    console.log('[PLAY] Getting info for:', song.url);
+    
+    const ytInfo = await youtubedl(song.url, {
+      dumpSingleJson: true,
+      noCheckCertificates: true,
+      noWarnings: true,
+      preferFreeFormats: true,
+      format: 'bestaudio'
+    });
+    
+    console.log('[PLAY] Got video info:', ytInfo.title);
+    
+    if (!ytInfo.url) {
+      throw new Error('Nie można pobrać URL streamu audio');
+    }
+    
+    const audioUrl = ytInfo.url;
+    console.log('[PLAY] Audio URL obtained');
+    
+    const videoData = {
+      title: ytInfo.title || song.title,
+      url: song.url,
+      channel: { name: ytInfo.uploader || ytInfo.channel || song.channel.name },
+      durationRaw: ytInfo.duration ? new Date(ytInfo.duration * 1000).toISOString().substring(11, 19) : song.durationRaw,
+      thumbnails: ytInfo.thumbnail ? [{ url: ytInfo.thumbnail }] : song.thumbnails
+    };
+    
+    console.log('[PLAY] Creating audio stream with ffmpeg...');
+    
+    if (queue.ffmpeg) {
+      queue.ffmpeg.kill();
+    }
+    
+    const ffmpeg = spawn('ffmpeg', [
+      '-reconnect', '1',
+      '-reconnect_streamed', '1',
+      '-reconnect_delay_max', '5',
+      '-i', audioUrl,
+      '-analyzeduration', '0',
+      '-loglevel', '0',
+      '-f', 's16le',
+      '-ar', '48000',
+      '-ac', '2',
+      'pipe:1'
+    ], {
+      stdio: ['ignore', 'pipe', 'ignore']
+    });
+    
+    ffmpeg.on('error', (err) => {
+      console.error('[PLAY] FFmpeg error:', err);
+    });
+    
+    const stream = ffmpeg.stdout;
+    queue.ffmpeg = ffmpeg;
+    
+    console.log('[PLAY] Audio stream created successfully');
+    
+    const resource = createAudioResource(stream, {
+      inputType: StreamType.Raw,
+      inlineVolume: true
+    });
+
+    queue.player.play(resource);
+    queue.connection.subscribe(queue.player);
+    
+    queue.queue[0] = videoData;
+
+    const embed = new EmbedBuilder()
+      .setColor('#FF0000')
+      .setTitle('🎵 Teraz gra')
+      .setDescription(`[${videoData.title}](${videoData.url})`)
+      .addFields(
+        { name: '👤 Kanał', value: videoData.channel.name, inline: true },
+        { name: '⏱️ Czas', value: videoData.durationRaw, inline: true },
+        { name: '📋 W kolejce', value: `${queue.queue.length - 1} utwor${queue.queue.length - 1 === 1 ? '' : 'ów'}`, inline: true }
+      )
+      .setThumbnail(videoData.thumbnails[0].url)
+      .setTimestamp();
+
+    if (isSlash && interaction) {
+      await interaction.followUp({ embeds: [embed] });
+    } else if (channel) {
+      channel.send({ embeds: [embed] });
+    }
+  } catch (error) {
+    console.error('[PLAY] Error playing song:', error);
+    
+    queue.queue.shift();
+    
+    if (queue.queue.length > 0) {
+      await playNextSong(guildId, client, false, null, queue.channel);
+    } else {
+      if (queue.ffmpeg) queue.ffmpeg.kill();
+      queue.connection.destroy();
+      client.musicQueue.delete(guildId);
+    }
+  }
+}
