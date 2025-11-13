@@ -507,11 +507,16 @@ node index.js
 <details>
 <summary><b>📺 YouTube (2 komendy)</b></summary>
 
-- `/download https://youtube.com/...` - Pobierz film/muzykę na Google Drive
+- `/download https://youtube.com/...` - Pobierz film/muzykę z YouTube lub Spotify
   - Wspiera YouTube i Spotify
-  - Formaty: Video (mp4) lub Audio (mp3)
-  - **Jakość wideo:** 360p, 480p, 720p HD, 1080p Full HD, 1440p 2K, 2160p 4K
-  - Automatyczne wgrywanie na Google Drive
+  - 📊 **Formaty:** Video (mp4) lub Audio (mp3)
+  - 🎬 **Jakość wideo:** 360p, 480p, 720p HD, 1080p Full HD, 1440p 2K, 2160p 4K, Najlepsza
+  - 📤 **Gdzie wysłać:**
+    - ☁️ Google Drive (link do pliku) - domyślnie
+    - 💬 Discord (załącznik bezpośrednio na czat, max 25MB)
+    - 📤 Oba (Drive + Discord jednocześnie)
+  - 📏 **Wyświetla rozmiar pliku** podczas pobierania i wysyłania
+  - ✅ **Szczegółowe statusy:** pobieranie → rozmiar → wysyłanie → gotowe
 - `/ytnotify kanał` - Powiadomienia o nowych filmach
 
 </details>

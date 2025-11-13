@@ -16,6 +16,12 @@ Najpotężniejszy bot Discord napisany w Node.js z 155 komendami w 12 kategoriac
 - **2 komendy YouTube** (download do Google Drive, powiadomienia)
 
 ## Ostatnie zmiany
+- 2025-11-13: **Dodano opcje wysyłania pliku do `/download`**
+  - 📤 **3 opcje wysyłania:** Google Drive, Discord (załącznik), lub oba jednocześnie
+  - 💬 **Discord attachment:** pliki <25MB można wysłać bezpośrednio na czat
+  - ☁️ **Google Drive:** zawsze dostępne dla większych plików
+  - 📏 **Rozmiar pliku:** wyświetlanie rozmiaru podczas i po pobraniu
+  - ✅ **Lepsze statusy:** szczegółowe komunikaty o postępie (pobieranie → rozmiar → wysyłanie)
 - 2025-11-13: **Dodano obsługę User App - "Dodaj do Moich aplikacji"**
   - 🚀 **User Install support:** Bot można dodać do "Moich aplikacji" Discord
   - ✅ **140+ komend w DM:** Większość komend działa w prywatnych wiadomościach
