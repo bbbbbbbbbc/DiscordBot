@@ -59,7 +59,7 @@ node registerCommands.js
 - **Games:** 15 diverse games including gambling, multiplayer, and trivia.
 - **Economy:** Virtual currency, daily rewards, work, shop, inventory, leaderboard. Customizable earning rates and bank limits per server (1-10,000 range, owner-only `/ekonomia-ustawienia` command).
 - **Leveling:** XP gain per message, rank display, level leaderboard.
-- **Music:** 9 commands - play, stop, skip, queue, pause, resume, volume, wyjdz (manual disconnect). Full playlist support (YouTube, Spotify via official SDK) with automatic queueing, sequential playback, and persistent voice connection (bot stays until manual `/wyjdz` or `/stop`, auto-resumes when adding songs to idle queue).
+- **Music:** 9 commands - play, stop, skip, queue, pause, resume, volume, wyjdz (manual disconnect). Full playlist support (YouTube, Spotify via official SDK) with automatic queueing, sequential playback, and persistent voice connection (bot stays until manual `/wyjdz` or `/stop`, auto-resumes when adding songs to idle queue). Supports playlists up to 1,000,000 tracks.
 - **Reminders & Timers:** User-definable reminders and countdown timers.
 - **Polls & Voting:** Create polls and quick yes/no votes.
 - **Entertainment:** Memes, animal pictures, jokes.
@@ -79,6 +79,9 @@ node registerCommands.js
 - **`@spotify/web-api-ts-sdk`:** Official Spotify Web API SDK for TypeScript/JavaScript, used for playlist and track metadata retrieval.
 
 ## Recent Changes
+
+### v2.7.1 - Playlist Limit Increase (Nov 13, 2025)
+- **Playlist Limit**: Increased maximum playlist size to 1,000,000 tracks for both YouTube and Spotify playlists
 
 ### v2.7.0 - Music System Persistent Connection & Spotify SDK (Nov 13, 2025)
 - **Music Persistent Voice Connection**: Bot now stays in voice channel when queue empties, only disconnects on manual `/wyjdz` or `/stop` command

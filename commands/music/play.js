@@ -81,7 +81,7 @@ module.exports = {
             let tracksToFetch = playlistData.tracks.items;
             let nextUrl = playlistData.tracks.next;
             
-            while (nextUrl) {
+            while (nextUrl && tracksToFetch.length < 1000000) {
               const offset = tracksToFetch.length;
               const nextBatch = await spotify.playlists.getPlaylistItems(playlistId, { limit: 50, offset });
               if (nextBatch && nextBatch.items && nextBatch.items.length > 0) {
@@ -200,7 +200,7 @@ module.exports = {
         
         try {
           const playlistData = await play.playlist_info(query);
-          const videos = await playlistData.all_videos();
+          const videos = await playlistData.all_videos(1000000);
           
           console.log('[PLAY] YouTube playlist:', playlistData.title, 'Videos:', videos.length);
           
