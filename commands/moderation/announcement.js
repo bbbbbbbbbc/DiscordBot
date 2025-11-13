@@ -102,7 +102,7 @@ module.exports = {
       await targetChannel.send({
         content: tagText,
         embeds: [embed],
-        allowedMentions: { parse: ['everyone', 'here'] }
+        allowedMentions: { parse: ['everyone'] }
       });
 
       const timeInfo = isNightTime ? '🌙 (noc - @here)' : '☀️ (@everyone)';

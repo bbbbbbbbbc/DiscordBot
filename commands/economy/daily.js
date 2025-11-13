@@ -3,12 +3,27 @@ const fs = require('fs');
 const path = require('path');
 
 const economyPath = path.join(__dirname, '../../data/economy.json');
+const settingsPath = path.join(__dirname, '../../data/economySettings.json');
 
 function getEconomy() {
   if (!fs.existsSync(economyPath)) {
     fs.writeFileSync(economyPath, '{}');
   }
   return JSON.parse(fs.readFileSync(economyPath, 'utf8'));
+}
+
+function getGuildSettings(guildId) {
+  if (!fs.existsSync(settingsPath)) {
+    fs.writeFileSync(settingsPath, '{}');
+  }
+  const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  if (!settings[guildId]) {
+    settings[guildId] = {
+      work: { min: 150, max: 900 },
+      daily: { min: 500, max: 1000 }
+    };
+  }
+  return settings[guildId];
 }
 
 module.exports = {
@@ -42,7 +57,10 @@ module.exports = {
       }
     }
 
-    const reward = Math.floor(Math.random() * 500) + 500;
+    const guildSettings = getGuildSettings(interaction.guild.id);
+    const { min: minReward, max: maxReward } = guildSettings.daily;
+    
+    const reward = Math.floor(Math.random() * (maxReward - minReward + 1)) + minReward;
     userData.balance = Math.max(0, userData.balance + reward);
     userData.lastDaily = now;
 

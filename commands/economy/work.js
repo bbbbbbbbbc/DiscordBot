@@ -3,12 +3,27 @@ const fs = require('fs');
 const path = require('path');
 
 const economyPath = path.join(__dirname, '../../data/economy.json');
+const settingsPath = path.join(__dirname, '../../data/economySettings.json');
 
 function getEconomy() {
   if (!fs.existsSync(economyPath)) {
     fs.writeFileSync(economyPath, '{}');
   }
   return JSON.parse(fs.readFileSync(economyPath, 'utf8'));
+}
+
+function getGuildSettings(guildId) {
+  if (!fs.existsSync(settingsPath)) {
+    fs.writeFileSync(settingsPath, '{}');
+  }
+  const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  if (!settings[guildId]) {
+    settings[guildId] = {
+      work: { min: 150, max: 900 },
+      daily: { min: 500, max: 1000 }
+    };
+  }
+  return settings[guildId];
 }
 
 module.exports = {
@@ -41,17 +56,20 @@ module.exports = {
       }
     }
 
+    const guildSettings = getGuildSettings(interaction.guild.id);
+    const { min: minEarn, max: maxEarn } = guildSettings.work;
+
     const jobs = [
-      { name: 'Programista', emoji: '💻', min: 300, max: 800 },
-      { name: 'Lekarz', emoji: '⚕️', min: 400, max: 900 },
-      { name: 'Kurier', emoji: '🚚', min: 200, max: 500 },
-      { name: 'Nauczyciel', emoji: '👨‍🏫', min: 250, max: 600 },
-      { name: 'Sprzedawca', emoji: '🛒', min: 150, max: 400 },
-      { name: 'Mechanik', emoji: '🔧', min: 300, max: 700 },
+      { name: 'Programista', emoji: '💻' },
+      { name: 'Lekarz', emoji: '⚕️' },
+      { name: 'Kurier', emoji: '🚚' },
+      { name: 'Nauczyciel', emoji: '👨‍🏫' },
+      { name: 'Sprzedawca', emoji: '🛒' },
+      { name: 'Mechanik', emoji: '🔧' },
     ];
 
     const job = jobs[Math.floor(Math.random() * jobs.length)];
-    const earned = Math.floor(Math.random() * (job.max - job.min + 1)) + job.min;
+    const earned = Math.floor(Math.random() * (maxEarn - minEarn + 1)) + minEarn;
 
     userData.balance = Math.max(0, userData.balance + earned);
     userData.lastWork = now;
