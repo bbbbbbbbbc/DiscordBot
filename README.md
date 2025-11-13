@@ -472,10 +472,11 @@ node index.js
 </details>
 
 <details>
-<summary><b>🎵 Muzyka (7 komend)</b></summary>
+<summary><b>🎵 Muzyka (8 komend)</b></summary>
 
+- `/join` - **Dołącz do kanału głosowego** (bez odtwarzania muzyki)
 - `/play https://youtube.com/...` - Odtwórz z YouTube
-- `/stop` - Zatrzymaj muzykę
+- `/stop` - Zatrzymaj muzykę i wyjdź z kanału
 - `/skip` - Pomiń utwór
 - `/queue` - Kolejka utworów
 - `/pause` - Pauza
