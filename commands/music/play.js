@@ -5,6 +5,7 @@ const youtubedl = require('youtube-dl-exec');
 const ytSearch = require('yt-search');
 const { spawn } = require('child_process');
 const { getUncachableSpotifyClient } = require('../../utils/spotify');
+const { getData } = require('spotify-url-info');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -68,30 +69,16 @@ module.exports = {
           }
           
           try {
-            const spotify = await getUncachableSpotifyClient();
-            const playlistData = await spotify.playlists.getPlaylist(playlistId);
+            console.log('[PLAY] Getting Spotify playlist data...');
+            const playlistInfo = await getData(`https://open.spotify.com/playlist/${playlistId}`);
             
-            console.log('[PLAY] Spotify playlist:', playlistData.name);
-            
-            let allTracks = [];
-            let offset = 0;
-            const limit = 100;
-            
-            while (true) {
-              const tracksPage = await spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, limit, offset);
-              allTracks.push(...tracksPage.items);
-              
-              console.log('[PLAY] Fetched', tracksPage.items.length, 'tracks (offset:', offset, ')');
-              
-              if (tracksPage.items.length < limit || !tracksPage.next) {
-                break;
-              }
-              offset += limit;
+            if (!playlistInfo || !playlistInfo.tracks || !playlistInfo.tracks.items) {
+              throw new Error('Nie można pobrać danych playlisty');
             }
             
-            console.log('[PLAY] Total tracks in playlist:', allTracks.length);
+            console.log('[PLAY] Spotify playlist:', playlistInfo.name, 'Tracks:', playlistInfo.tracks.items.length);
             
-            for (const item of allTracks) {
+            for (const item of playlistInfo.tracks.items) {
               if (item.track && item.track.name && item.track.artists && item.track.artists[0]) {
                 const trackName = item.track.name;
                 const artistName = item.track.artists[0].name;
@@ -124,7 +111,7 @@ module.exports = {
               }
             }
             
-            const message = `✅ Dodano ${songs.length} utworów z playlisty Spotify: **${playlistData.name}**`;
+            const message = `✅ Dodano ${songs.length} utworów z playlisty Spotify: **${playlistInfo.name}**`;
             if (isSlash) {
               await interaction.editReply(message);
             } else {
@@ -132,7 +119,7 @@ module.exports = {
             }
           } catch (error) {
             console.error('[PLAY] Spotify error:', error);
-            const message = '❌ Błąd podczas pobierania playlisty Spotify! Upewnij się, że Spotify jest połączony.';
+            const message = '❌ Błąd podczas pobierania playlisty Spotify! Spróbuj innego linku.';
             if (isSlash) {
               return await interaction.editReply(message);
             } else {
@@ -144,11 +131,14 @@ module.exports = {
           console.log('[PLAY] Spotify track detected:', trackId);
           
           try {
-            const spotify = await getUncachableSpotifyClient();
-            const trackData = await spotify.tracks.get(trackId);
+            const trackInfo = await getData(`https://open.spotify.com/track/${trackId}`);
             
-            const trackName = trackData.name;
-            const artistName = trackData.artists[0].name;
+            if (!trackInfo || !trackInfo.name || !trackInfo.artists || !trackInfo.artists[0]) {
+              throw new Error('Nie można pobrać danych utworu');
+            }
+            
+            const trackName = trackInfo.name;
+            const artistName = trackInfo.artists[0].name;
             const searchQuery = `${artistName} - ${trackName}`;
             
             console.log('[PLAY] Searching YouTube for:', searchQuery);
