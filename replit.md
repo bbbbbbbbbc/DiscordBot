@@ -1,25 +1,25 @@
 # Mega Bot Discord
 
 ## Overview
-Mega Bot Discord is a powerful Node.js Discord bot designed to provide a comprehensive suite of features across 12 categories, totaling 156 commands. Its purpose is to enhance Discord server functionality through moderation, engaging games, economic systems, entertainment, utility, AI capabilities, social interactions, music playback, leveling systems, and YouTube integrations. The project aims to deliver a stable, reliable, and feature-rich bot experience for a wide range of Discord communities.
+Mega Bot Discord is a powerful Node.js Discord bot designed to provide a comprehensive suite of features across 12 categories, totaling 157 commands. Its purpose is to enhance Discord server functionality through moderation, engaging games, economic systems, entertainment, utility, AI capabilities, social interactions, music playback, leveling systems, and YouTube integrations. The project aims to deliver a stable, reliable, and feature-rich bot experience for a wide range of Discord communities.
 
 ## User Preferences
 - Język: Polski
 - Wszystkie odpowiedzi i komunikaty w języku polskim
 
 ## System Architecture
-The bot is built on Node.js and utilizes modern Discord.js slash commands for enhanced user interaction and discoverability. It supports User App installations, allowing most commands to function in Direct Messages. Architectural decisions include dynamic command categorization, robust error handling, and a modular command structure (categorized in `commands/`). Data persistence for economy, leveling, and user statistics is managed through JSON files in the `data/` directory. Temporary download files are stored in `downloads/`. The music system leverages `play-dl` and `youtube-dl-exec` with `ffmpeg` for media processing, including advanced features like playlist support (YouTube, Spotify with full pagination), automatic queue management, sequential playback, and file upload options (Google Drive, Discord attachment). Spotify integration uses Replit's connector for secure credential management. AI functionalities require an OpenAI API key. The bot is designed for per-server command registration to overcome Discord's 100-command global limit, ensuring all 156 commands are available. Installation scripts (`install.sh`, `install.bat`) are provided for easy setup on various operating systems.
+The bot is built on Node.js and utilizes modern Discord.js slash commands for enhanced user interaction and discoverability. It supports User App installations, allowing most commands to function in Direct Messages. Architectural decisions include dynamic command categorization, robust error handling, and a modular command structure (categorized in `commands/`). Data persistence for economy, leveling, and user statistics is managed through JSON files in the `data/` directory. Economy settings are stored per-guild in `data/economySettings.json`, allowing server owners to customize earning rates. Temporary download files are stored in `downloads/`. The music system leverages `play-dl` and `youtube-dl-exec` with `ffmpeg` for media processing, including advanced features like playlist support (YouTube, Spotify with full pagination), automatic queue management, sequential playback, and file upload options (Google Drive, Discord attachment). Spotify integration uses Replit's connector for secure credential management. AI functionalities require an OpenAI API key. The bot is designed for per-server command registration to overcome Discord's 100-command global limit, ensuring all 157 commands are available. Installation scripts (`install.sh`, `install.bat`) are provided for easy setup on various operating systems.
 
-### Command Registration Solution (156 Commands)
-**Problem:** Discord returns `BASE_TYPE_MAX_LENGTH` error when attempting to register all 156 commands at once via single PUT request.
+### Command Registration Solution (157 Commands)
+**Problem:** Discord returns `BASE_TYPE_MAX_LENGTH` error when attempting to register all 157 commands at once via single PUT request.
 
 **Root Cause:** Discord has an undocumented limit on bulk command registration. While individual command validation passes, registering >100-150 commands simultaneously triggers cumulative payload validation errors.
 
 **Solution:** Hybrid registration approach implemented in `registerCommands.js`:
 1. **PUT** first 78 commands (bulk registration, replaces all existing)
-2. **POST** remaining 78 commands individually (adds without replacing)
+2. **POST** remaining 79 commands individually (adds without replacing)
 3. **Retry Logic**: 3 attempts with exponential backoff (1s, 2s, 4s) for Discord API timeouts
-4. Result: All 156 commands successfully registered
+4. Result: All 157 commands successfully registered
 
 **Usage:**
 ```bash
@@ -55,9 +55,9 @@ node registerCommands.js
 - **Error Handling:** Comprehensive error handling mechanisms prevent bot crashes and provide informative user feedback.
 
 ### Feature Specifications
-- **Moderation:** Ban, kick, mute, warn, slowmode, automod, word filter, announcements (with custom embeds, colors, and mentions).
+- **Moderation:** Ban, kick, mute, warn, slowmode, automod, word filter, announcements (with custom embeds, colors, auto @everyone/here based on time).
 - **Games:** 15 diverse games including gambling, multiplayer, and trivia.
-- **Economy:** Virtual currency, daily rewards, work, shop, inventory, leaderboard.
+- **Economy:** Virtual currency, daily rewards, work, shop, inventory, leaderboard. Customizable earning rates per server (owner-only settings).
 - **Leveling:** XP gain per message, rank display, level leaderboard.
 - **Music:** Play, stop, skip, queue, pause, resume, volume control for YouTube and Spotify. Full playlist support (YouTube, Spotify) with automatic queueing and sequential playback.
 - **Reminders & Timers:** User-definable reminders and countdown timers.
