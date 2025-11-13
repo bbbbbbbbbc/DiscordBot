@@ -132,7 +132,7 @@ module.exports = {
           console.error('Spotify error:', spotifyError);
           throw new Error(`Błąd Spotify: ${spotifyError.message}`);
         }
-      } else if (ytdl.validateURL(url)) {
+      } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
         youtubeUrl = url;
       } else {
         throw new Error('Nieobsługiwany link! Obsługiwane platformy: YouTube, Spotify');
