@@ -24,17 +24,45 @@ module.exports = {
           { name: 'Wideo', value: 'video' },
           { name: 'Audio', value: 'audio' }
         )
+    )
+    .addStringOption(option =>
+      option.setName('quality')
+        .setDescription('Jakość wideo')
+        .setRequired(false)
+        .addChoices(
+          { name: '360p', value: '360' },
+          { name: '480p', value: '480' },
+          { name: '720p HD', value: '720' },
+          { name: '1080p Full HD', value: '1080' },
+          { name: '1440p 2K', value: '1440' },
+          { name: '2160p 4K', value: '2160' },
+          { name: 'Najlepsza', value: 'best' }
+        )
+    )
+    .addStringOption(option =>
+      option.setName('wyslijdo')
+        .setDescription('Gdzie wysłać plik')
+        .setRequired(false)
+        .addChoices(
+          { name: 'Google Drive', value: 'drive' },
+          { name: 'Discord (max 25MB)', value: 'discord' },
+          { name: 'Drive + Discord', value: 'both' }
+        )
     ),
   async execute(interaction, args) {
     const isSlash = interaction.isChatInputCommand && interaction.isChatInputCommand();
     
-    let url, format;
+    let url, format, quality, destination;
     if (isSlash) {
       url = interaction.options?.getString('url');
       format = interaction.options?.getString('format') || 'audio';
+      quality = interaction.options?.getString('quality') || 'best';
+      destination = interaction.options?.getString('wyslijdo') || 'drive';
     } else {
       url = args[0];
       format = args[1] === 'video' ? 'video' : 'audio';
+      quality = args[2] || 'best';
+      destination = args[3] || 'drive';
     }
     
     if (!url) {
@@ -104,7 +132,7 @@ module.exports = {
           console.error('Spotify error:', spotifyError);
           throw new Error(`Błąd Spotify: ${spotifyError.message}`);
         }
-      } else if (ytdl.validateURL(url)) {
+      } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
         youtubeUrl = url;
       } else {
         throw new Error('Nieobsługiwany link! Obsługiwane platformy: YouTube, Spotify');
@@ -120,7 +148,10 @@ module.exports = {
       const fileName = `${sanitizedTitle}.${fileExt}`;
       filePath = path.join(downloadsDir, fileName);
 
-      const downloadingMsg = `📥 Pobieranie: **${sanitizedTitle}**${artist ? ` - ${artist}` : ''}...`;
+      const qualityText = format === 'video' && quality !== 'best' ? ` (${quality}p)` : '';
+      const formatEmoji = format === 'audio' ? '🎵' : '🎬';
+      const destEmoji = destination === 'drive' ? '☁️' : destination === 'discord' ? '💬' : '📤';
+      const downloadingMsg = `${formatEmoji} **Pobieranie...**\n\n📁 Plik: **${sanitizedTitle}**${artist ? `\n👤 Artysta: ${artist}` : ''}${qualityText ? `\n📺 Jakość: ${quality}p` : ''}\n${destEmoji} Cel: ${destination === 'drive' ? 'Google Drive' : destination === 'discord' ? 'Discord' : 'Drive + Discord'}\n\n⏳ Trwa pobieranie...`;
       if (isSlash) {
         await interaction.editReply(downloadingMsg);
       } else {
@@ -137,7 +168,16 @@ module.exports = {
         ytdlpOptions.audioFormat = 'mp3';
         ytdlpOptions.audioQuality = 0;
       } else {
-        ytdlpOptions.format = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+        let formatString;
+        
+        if (quality === 'best') {
+          formatString = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+        } else {
+          const height = quality;
+          formatString = `bestvideo[height<=${height}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}]`;
+        }
+        
+        ytdlpOptions.format = formatString;
         ytdlpOptions.mergeOutputFormat = 'mp4';
       }
 
@@ -147,39 +187,90 @@ module.exports = {
         throw new Error('Pobieranie nie powiodło się - plik nie został utworzony. Film może być niedostępny lub zabezpieczony.');
       }
 
-      const uploadingMsg = '☁️ Przesyłam na Google Drive...';
+      const stats = fs.statSync(filePath);
+      const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+
+      const processingMsg = `✅ **Pobrano!**\n\n📁 Rozmiar: **${fileSizeMB} MB**\n⏳ Przesyłam plik...`;
       if (isSlash) {
-        await interaction.editReply(uploadingMsg);
+        await interaction.editReply(processingMsg);
       } else {
-        await statusMsg.edit(uploadingMsg);
+        await statusMsg.edit(processingMsg);
       }
 
-      const drive = await getUncachableGoogleDriveClient();
-      
-      const fileMetadata = {
-        name: fileName,
-        mimeType: format === 'audio' ? 'audio/mpeg' : 'video/mp4'
-      };
+      let driveLink = null;
+      let discordAttachment = null;
 
-      const media = {
-        mimeType: format === 'audio' ? 'audio/mpeg' : 'video/mp4',
-        body: fs.createReadStream(filePath)
-      };
+      if (destination === 'drive' || destination === 'both') {
+        const uploadingMsg = `☁️ **Przesyłam na Google Drive...**\n\n📁 Rozmiar: ${fileSizeMB} MB`;
+        if (isSlash) {
+          await interaction.editReply(uploadingMsg);
+        } else {
+          await statusMsg.edit(uploadingMsg);
+        }
 
-      const driveFile = await drive.files.create({
-        requestBody: fileMetadata,
-        media: media,
-        fields: 'id, name, webViewLink'
-      });
+        const drive = await getUncachableGoogleDriveClient();
+        
+        const fileMetadata = {
+          name: fileName,
+          mimeType: format === 'audio' ? 'audio/mpeg' : 'video/mp4'
+        };
 
-      fs.unlinkSync(filePath);
+        const media = {
+          mimeType: format === 'audio' ? 'audio/mpeg' : 'video/mp4',
+          body: fs.createReadStream(filePath)
+        };
+
+        const driveFile = await drive.files.create({
+          requestBody: fileMetadata,
+          media: media,
+          fields: 'id, name, webViewLink'
+        });
+
+        driveLink = driveFile.data.webViewLink;
+      }
+
+      if (destination === 'discord' || destination === 'both') {
+        if (stats.size > 25 * 1024 * 1024) {
+          const sizeWarning = `⚠️ **Plik jest za duży dla Discord!**\n\n📁 Rozmiar: ${fileSizeMB} MB (max 25 MB)\n${driveLink ? `✅ Dostępny na Google Drive!` : '❌ Wybierz Google Drive jako cel'}`;
+          if (isSlash) {
+            await interaction.editReply(sizeWarning);
+          } else {
+            await statusMsg.edit(sizeWarning);
+          }
+        } else {
+          discordAttachment = filePath;
+        }
+      }
 
       const platform = url.includes('spotify.com') ? '🎵 Spotify' : '📺 YouTube';
-      const successMsg = `✅ **Gotowe!**\n\n${platform}\n📁 Plik: **${sanitizedTitle}**${artist ? `\n👤 Artysta: ${artist}` : ''}\n🔗 Link: ${driveFile.data.webViewLink}\n💾 Zapisano na Google Drive!`;
+      const qualityInfo = format === 'video' && quality !== 'best' ? `\n📺 Jakość: ${quality}p` : '';
+      
+      let successMsg = `✅ **Gotowe!**\n\n${platform}\n📁 Plik: **${sanitizedTitle}**${artist ? `\n👤 Artysta: ${artist}` : ''}${qualityInfo}\n💾 Rozmiar: ${fileSizeMB} MB`;
+      
+      if (driveLink) {
+        successMsg += `\n\n☁️ **Google Drive:**\n🔗 ${driveLink}`;
+      }
+      
+      if (discordAttachment) {
+        successMsg += `\n\n💬 **Discord:** Plik w załączniku poniżej`;
+      }
+
       if (isSlash) {
-        await interaction.editReply(successMsg);
+        if (discordAttachment) {
+          await interaction.editReply({ content: successMsg, files: [{ attachment: discordAttachment, name: fileName }] });
+        } else {
+          await interaction.editReply(successMsg);
+        }
       } else {
-        await statusMsg.edit(successMsg);
+        if (discordAttachment) {
+          await statusMsg.edit({ content: successMsg, files: [{ attachment: discordAttachment, name: fileName }] });
+        } else {
+          await statusMsg.edit(successMsg);
+        }
+      }
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
       }
 
     } catch (error) {
@@ -208,6 +299,9 @@ module.exports = {
           errorMsg = '❌ Błąd konwersji audio. Spróbuj ponownie.';
         } else if (error.stderr && error.stderr.includes('cookies are no longer valid')) {
           errorMsg = '❌ Błąd pobierania. Film może wymagać logowania lub jest niedostępny.';
+        } else if (error.message.includes('Requested format is not available') || 
+                   error.stderr?.includes('Requested format is not available')) {
+          errorMsg = `❌ Wybrana jakość ${quality}p nie jest dostępna dla tego filmu. Spróbuj niższej jakości.`;
         } else {
           const shortMsg = error.message.substring(0, 100);
           errorMsg = `❌ Błąd: ${shortMsg}${error.message.length > 100 ? '...' : ''}`;

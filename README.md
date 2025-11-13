@@ -37,11 +37,12 @@
 ### ✨ **Kluczowe funkcje:**
 
 - ✅ **Slash Commands** (`/`) i **Prefix Commands** (`!`) - pełna kompatybilność
+- 🚀 **User App** - "Dodaj do Moich aplikacji" - używaj wszędzie (DM, każdy serwer)!
 - ✅ **System ekonomii** z wirtualną walutą i sklepem
 - ✅ **System poziomów/XP** z automatycznymi nagrodami
 - ✅ **Odtwarzacz muzyki** z YouTube i Spotify
 - ✅ **AI Integration** (OpenAI GPT) - chatbot, generowanie kodu, map, pluginów
-- ✅ **YouTube Downloads** - pobieranie filmów/muzyki na Google Drive
+- ✅ **YouTube Downloads** - pobieranie filmów/muzyki na Google Drive (360p-4K)
 - ✅ **Automoderacja** - filtr wulgaryzmów, anty-spam
 - ✅ **Statystyki** - śledzenie aktywności użytkowników i serwera
 - ✅ **Persistent Storage** - JSON-based data dla ekonomii, poziomów, statystyk
@@ -49,26 +50,109 @@
 
 ---
 
+## 🌟 User App - Dodaj do Moich aplikacji!
+
+Bot obsługuje **User Install** - możesz go dodać do "Moich aplikacji" i używać **wszędzie**:
+- ✅ W prywatnych wiadomościach (DM)
+- ✅ Na każdym serwerze (nawet bez uprawnień)
+- ✅ W grupach prywatnych
+- ✅ 140+ komend dostępnych bez dodawania bota na serwer!
+
+### **Jak dodać jako User App?**
+
+1. **Skonfiguruj w Discord Developer Portal:**
+   - Wejdź na: https://discord.com/developers/applications
+   - Kliknij swoją aplikację → **Installation**
+   - Zaznacz: ✅ **User Install**
+   - Zapisz zmiany
+
+2. **Dodaj do Moich aplikacji:**
+   - Użyj linku: `https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID`
+   - Lub wyszukaj bota w Discord i kliknij **"Dodaj do Moich aplikacji"**
+
+3. **Gotowe!** Używaj komend wszędzie:
+   ```
+   /help
+   /meme
+   /joke
+   /slots 100
+   /chat co słychać?
+   /download https://youtube.com/...
+   ```
+
+📖 **Szczegółowa instrukcja:** Zobacz [USER_APP_SETUP.md](USER_APP_SETUP.md)
+
+---
+
 ## 🚀 Instalacja
 
 ### **Wymagania:**
-- Node.js 18+ (zalecane: 20)
+- Node.js 16+ (zalecane: 20)
 - npm lub yarn
 - Konto Discord Developer
+- ffmpeg (opcjonalnie - dla muzyki i YouTube)
+
+---
+
+### **⚡ METODA 1: Automatyczna instalacja (ZALECANE)**
+
+Użyj skryptu instalacyjnego który automatycznie zainstaluje wszystko:
+
+**Linux/Mac/Hosting (Pella.app, VPS):**
+```bash
+bash install.sh
+```
+
+**Windows:**
+```batch
+install.bat
+```
+
+**Skrypt automatycznie:**
+- ✅ Sprawdzi Node.js i npm
+- ✅ Usunie uszkodzone pakiety
+- ✅ Zainstaluje wszystkie zależności
+- ✅ Utworzy potrzebne foldery (data, downloads)
+- ✅ Sprawdzi zmienne środowiskowe
+- ✅ Wyświetli instrukcje uruchomienia
+
+---
+
+### **📦 METODA 2: Manualna instalacja**
 
 ### **1. Sklonuj repozytorium:**
 ```bash
-git clone https://github.com/TWOJA_NAZWA/discord-bot-155-komend.git
-cd discord-bot-155-komend
+git clone https://github.com/bbbbbbbbbc/DiscordBot.git
+cd DiscordBot
 ```
 
 ### **2. Zainstaluj zależności:**
 ```bash
+# Usuń stare pakiety (jeśli istnieją)
+rm -rf node_modules package-lock.json
+
+# Zainstaluj wszystko od zera
 npm install
 ```
 
-### **3. Konfiguracja:**
-Stwórz plik `.env` (lub użyj Secrets w Replit):
+### **3. Zainstaluj ffmpeg (opcjonalnie - dla /play i /download):**
+
+**Ubuntu/Debian:**
+```bash
+sudo apt install ffmpeg
+```
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Windows:** Pobierz z [ffmpeg.org](https://ffmpeg.org/download.html)
+
+---
+
+### **4. Konfiguracja:**
+Stwórz plik `.env` (lub użyj Secrets w Replit/panelu hostingu):
 
 ```env
 DISCORD_BOT_TOKEN=twoj_token_bota_discord
@@ -177,10 +261,18 @@ node index.js
 
 ### **Muzyka:**
 ```
-/play https://youtube.com/...  - Odtwórz z YouTube
-/skip                          - Pomiń utwór
-/queue                         - Zobacz kolejkę
-/volume 50                     - Ustaw głośność na 50%
+/play Believer                              - Wyszukaj i odtwórz utwór
+/play https://youtube.com/watch?v=...       - Odtwórz z YouTube
+/play https://youtube.com/playlist?list=... - Cała playlista YouTube
+/play https://open.spotify.com/playlist/... - Cała playlista Spotify
+/play https://open.spotify.com/track/...    - Utwór ze Spotify
+/skip                                       - Pomiń utwór
+/queue                                      - Zobacz kolejkę
+/volume 50                                  - Ustaw głośność na 50%
+/pause                                      - Wstrzymaj
+/resume                                     - Wznów
+/stop                                       - Zatrzymaj i wyjdź
+/join                                       - Dołącz do kanału głosowego
 ```
 
 ### **AI:**
@@ -388,10 +480,11 @@ node index.js
 </details>
 
 <details>
-<summary><b>🎵 Muzyka (7 komend)</b></summary>
+<summary><b>🎵 Muzyka (8 komend)</b></summary>
 
+- `/join` - **Dołącz do kanału głosowego** (bez odtwarzania muzyki)
 - `/play https://youtube.com/...` - Odtwórz z YouTube
-- `/stop` - Zatrzymaj muzykę
+- `/stop` - Zatrzymaj muzykę i wyjdź z kanału
 - `/skip` - Pomiń utwór
 - `/queue` - Kolejka utworów
 - `/pause` - Pauza
@@ -423,9 +516,16 @@ node index.js
 <details>
 <summary><b>📺 YouTube (2 komendy)</b></summary>
 
-- `/download https://youtube.com/...` - Pobierz film/muzykę na Google Drive
+- `/download https://youtube.com/...` - Pobierz film/muzykę z YouTube lub Spotify
   - Wspiera YouTube i Spotify
-  - Formaty: Video (mp4) lub Audio (mp3)
+  - 📊 **Formaty:** Video (mp4) lub Audio (mp3)
+  - 🎬 **Jakość wideo:** 360p, 480p, 720p HD, 1080p Full HD, 1440p 2K, 2160p 4K, Najlepsza
+  - 📤 **Gdzie wysłać:**
+    - ☁️ Google Drive (link do pliku) - domyślnie
+    - 💬 Discord (załącznik bezpośrednio na czat, max 25MB)
+    - 📤 Oba (Drive + Discord jednocześnie)
+  - 📏 **Wyświetla rozmiar pliku** podczas pobierania i wysyłania
+  - ✅ **Szczegółowe statusy:** pobieranie → rozmiar → wysyłanie → gotowe
 - `/ytnotify kanał` - Powiadomienia o nowych filmach
 
 </details>
@@ -516,6 +616,35 @@ node index.js
 ---
 
 ## 📝 Changelog
+
+### **v2.4.0 - Playlist Support**
+- 🎵 **Obsługa playlist:** YouTube, Spotify i innych platform
+- ✅ **Spotify playlists:** Pełna paginacja (nieograniczona liczba utworów)
+- ✅ **YouTube playlists:** Automatyczne dodawanie wszystkich utworów
+- ✅ **System kolejki:** Automatyczne odtwarzanie następnych utworów
+- ✅ **Inteligentne wyszukiwanie:** Spotify tracks → YouTube streaming
+- 🔧 **Bezpieczne zarządzanie:** Auto-cleanup ffmpeg procesów
+
+### **v2.3.0 - Music System Fix**
+- 🎵 **Naprawiono system muzyczny:** `/play` działa na 100%
+- ✅ **Nowy silnik audio:** youtube-dl-exec + ffmpeg dla stabilnego streamingu
+- ✅ **Zainstalowano @discordjs/opus:** pełna obsługa enkodowania audio Discord
+- 🔧 **Dodano `/join`:** bot dołącza do kanału głosowego (156 komend)
+- ✅ **Pełna funkcjonalność:** play, stop, skip, pause, resume, volume, queue
+
+### **v2.2.0 - User App Update**
+- 🚀 Dodano obsługę User Install - "Dodaj do Moich aplikacji"
+- ✅ 140+ komend dostępnych w DM i wszędzie
+- ✅ Inteligentne rozróżnianie kontekstu (Guild/DM)
+- ✅ Komendy moderacyjne tylko na serwerach (zabezpieczenie)
+- 📖 Szczegółowa instrukcja konfiguracji (USER_APP_SETUP.md)
+
+### **v2.1.0 - Quality Update**
+- ✅ Dodano wybór jakości wideo do `/download` (360p-4K)
+- ✅ Skrypty instalacyjne dla zewnętrznego hostingu (install.sh, install.bat)
+- ✅ Naprawiono kompatybilność z Pella.app i innymi hostingami
+- ✅ Dodano script "start" do package.json
+- ✅ Zaktualizowano dokumentację instalacji
 
 ### **v2.0.0 - Mega Update (155 komend)**
 - ✅ Dodano 90 nowych komend (65 → 155)

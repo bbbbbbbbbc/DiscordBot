@@ -20,7 +20,22 @@ for (const folder of commandFolders) {
       const command = require(filePath);
       
       if ('data' in command && 'execute' in command) {
-        commands.push(command.data.toJSON());
+        const commandData = command.data.toJSON();
+        
+        // Komendy moderacyjne tylko na serwerach
+        const guildOnlyCommands = ['ban', 'kick', 'mute', 'unmute', 'warn', 'warnings', 'slowmode', 'tempban', 'lockdown', 'unlock', 'purge', 'nuke', 'clear', 'automod', 'filter'];
+        
+        if (guildOnlyCommands.includes(commandData.name)) {
+          // Tylko na serwerze (guild)
+          commandData.integration_types = [0];
+          commandData.contexts = [0];
+        } else {
+          // Wszędzie (guild + user install)
+          commandData.integration_types = [0, 1];
+          commandData.contexts = [0, 1, 2];
+        }
+        
+        commands.push(commandData);
         console.log(`  ✅ ${command.data.name}`);
       }
     }
