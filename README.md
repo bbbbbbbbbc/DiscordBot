@@ -810,7 +810,9 @@ Chcesz pomóc w rozwoju? Wspaniale!
 
 ## 📜 Licencja
 
-Ten projekt jest na licencji **MIT** - zobacz plik [LICENSE](LICENSE) dla szczegółów.
+Ten projekt jest na **Ograniczonej Licencji Użytkowania** - zobacz plik [LICENSE](LICENSE) dla szczegółów.
+
+⚠️ **UWAGA:** Publikacja, rozpowszechnianie lub udostępnianie tego projektu bez pisemnej zgody autora jest zabronione.
 
 ---
 
