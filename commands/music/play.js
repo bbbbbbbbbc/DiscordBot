@@ -44,12 +44,14 @@ module.exports = {
       }
 
       let videoUrl;
-      let videoData;
+      let videoInfo;
       
       const validationType = play.yt_validate(query);
+      console.log('[PLAY] Query:', query, 'Type:', validationType);
       
       if (validationType === 'video') {
         videoUrl = query;
+        console.log('[PLAY] Direct video URL:', videoUrl);
       } else if (validationType === 'playlist') {
         const message = '❌ Playlisty nie są obsługiwane. Podaj link do pojedynczego utworu.';
         if (isSlash) {
@@ -58,7 +60,9 @@ module.exports = {
           return channel.send(message);
         }
       } else {
+        console.log('[PLAY] Searching for:', query);
         const searchResult = await play.search(query, { limit: 1 });
+        console.log('[PLAY] Search result:', searchResult);
         
         if (!searchResult || searchResult.length === 0) {
           const message = '❌ Nie znaleziono utworu!';
@@ -69,22 +73,31 @@ module.exports = {
           }
         }
         
-        videoUrl = searchResult[0].url;
+        const firstResult = searchResult[0];
+        console.log('[PLAY] First result:', firstResult);
+        videoUrl = firstResult.url;
+        console.log('[PLAY] Video URL from search:', videoUrl);
       }
 
       if (!videoUrl) {
+        console.error('[PLAY] ERROR: videoUrl is undefined!');
         throw new Error('Nie można uzyskać URL filmu');
       }
 
-      const stream = await play.stream(videoUrl);
-      const info = await play.video_info(videoUrl);
+      console.log('[PLAY] Getting info for URL:', videoUrl);
+      videoInfo = await play.video_info(videoUrl);
+      console.log('[PLAY] Got video info:', videoInfo.video_details.title);
       
-      videoData = {
-        title: info.video_details.title,
+      console.log('[PLAY] Creating stream for URL:', videoUrl);
+      const stream = await play.stream(videoUrl);
+      console.log('[PLAY] Stream created successfully');
+      
+      const videoData = {
+        title: videoInfo.video_details.title,
         url: videoUrl,
-        channel: { name: info.video_details.channel?.name || 'Nieznany' },
-        durationRaw: info.video_details.durationRaw || 'N/A',
-        thumbnails: info.video_details.thumbnails || [{ url: 'https://via.placeholder.com/120' }]
+        channel: { name: videoInfo.video_details.channel?.name || 'Nieznany' },
+        durationRaw: videoInfo.video_details.durationRaw || 'N/A',
+        thumbnails: videoInfo.video_details.thumbnails || [{ url: 'https://via.placeholder.com/120' }]
       };
 
       const connection = joinVoiceChannel({
