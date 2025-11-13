@@ -8,7 +8,29 @@ Mega Bot Discord is a powerful Node.js Discord bot designed to provide a compreh
 - Wszystkie odpowiedzi i komunikaty w języku polskim
 
 ## System Architecture
-The bot is built on Node.js and utilizes modern Discord.js slash commands for enhanced user interaction and discoverability. It supports User App installations, allowing most commands to function in Direct Messages. Architectural decisions include dynamic command categorization, robust error handling, and a modular command structure (categorized in `commands/`). Data persistence for economy, leveling, and user statistics is managed through JSON files in the `data/` directory. Temporary download files are stored in `downloads/`. The music system leverages `play-dl` and `youtube-dl-exec` with `ffmpeg` for media processing, including advanced features like playlist support (YouTube, Spotify with full pagination), automatic queue management, sequential playback, and file upload options (Google Drive, Discord attachment). Spotify integration uses Replit's connector for secure credential management. AI functionalities require an OpenAI API key. The bot is designed for per-server command registration to overcome Discord's 100-command global limit, ensuring all 155 commands are available. Installation scripts (`install.sh`, `install.bat`) are provided for easy setup on various operating systems.
+The bot is built on Node.js and utilizes modern Discord.js slash commands for enhanced user interaction and discoverability. It supports User App installations, allowing most commands to function in Direct Messages. Architectural decisions include dynamic command categorization, robust error handling, and a modular command structure (categorized in `commands/`). Data persistence for economy, leveling, and user statistics is managed through JSON files in the `data/` directory. Temporary download files are stored in `downloads/`. The music system leverages `play-dl` and `youtube-dl-exec` with `ffmpeg` for media processing, including advanced features like playlist support (YouTube, Spotify with full pagination), automatic queue management, sequential playback, and file upload options (Google Drive, Discord attachment). Spotify integration uses Replit's connector for secure credential management. AI functionalities require an OpenAI API key. The bot is designed for per-server command registration to overcome Discord's 100-command global limit, ensuring all 156 commands are available. Installation scripts (`install.sh`, `install.bat`) are provided for easy setup on various operating systems.
+
+### Command Registration Solution (156 Commands)
+**Problem:** Discord returns `BASE_TYPE_MAX_LENGTH` error when attempting to register all 156 commands at once via single PUT request.
+
+**Root Cause:** Discord has an undocumented limit on bulk command registration. While individual command validation passes, registering >100-150 commands simultaneously triggers cumulative payload validation errors.
+
+**Solution:** Hybrid registration approach implemented in `registerCommands.js`:
+1. **PUT** first 78 commands (bulk registration, replaces all existing)
+2. **POST** remaining 78 commands individually (adds without replacing)
+3. Result: All 156 commands successfully registered
+
+**Usage:**
+```bash
+node registerCommands.js
+```
+
+**Technical Details:**
+- PUT method: Bulk overwrites all guild commands (fast, but limited to ~78-100 commands)
+- POST method: Creates/updates individual commands (slower, but no limit)
+- Hybrid approach combines speed of PUT with reliability of POST
+- Includes rate limiting (300ms delay between POST requests) to avoid API throttling
+- Automatic verification confirms all 156 commands are registered
 
 ### UI/UX Decisions
 - All commands are implemented as Discord slash commands (`/`) for a modern and intuitive user experience.

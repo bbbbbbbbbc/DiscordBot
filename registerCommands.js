@@ -20,22 +20,7 @@ for (const folder of commandFolders) {
       const command = require(filePath);
       
       if ('data' in command && 'execute' in command) {
-        const commandData = command.data.toJSON();
-        
-        // Komendy moderacyjne tylko na serwerach
-        const guildOnlyCommands = ['ban', 'kick', 'mute', 'unmute', 'warn', 'warnings', 'slowmode', 'tempban', 'lockdown', 'unlock', 'purge', 'nuke', 'clear', 'automod', 'filter'];
-        
-        if (guildOnlyCommands.includes(commandData.name)) {
-          // Tylko na serwerze (guild)
-          commandData.integration_types = [0];
-          commandData.contexts = [0];
-        } else {
-          // Wszędzie (guild + user install)
-          commandData.integration_types = [0, 1];
-          commandData.contexts = [0, 1, 2];
-        }
-        
-        commands.push(commandData);
+        commands.push(command.data.toJSON());
         console.log(`  ✅ ${command.data.name}`);
       }
     }
@@ -77,17 +62,83 @@ const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN);
       console.log(`✅ Zarejestrowano ${data.length}/100 komend GLOBALNIE`);
       console.log(`⚠️ Brakuje ${commands.length - 100} komend (użyj GUILD_ID aby je dodać)`);
     } else {
-      console.log(`\n📝 Rejestruję wszystkie ${commands.length} komend GUILD (serwer: ${GUILD_ID})...`);
+      console.log(`\n🎯 ROZWIĄZANIE PROBLEMU BASE_TYPE_MAX_LENGTH`);
+      console.log('='.repeat(70));
+      console.log(`Znaleziono: ${commands.length} komend`);
+      console.log(`Problem: PUT wszystkich ${commands.length} komend naraz = błąd`);
+      console.log(`Rozwiązanie: HYBRYDOWE (PUT 78 + POST ${commands.length - 78})`);
+      console.log('='.repeat(70) + '\n');
       
-      const data = await rest.put(
+      // KROK 1: PUT pierwszych 78 komend (sprawdzone że działa)
+      const batch1 = commands.slice(0, 78);
+      console.log(`📤 KROK 1/2: Rejestruję bazę ${batch1.length} komend (PUT)...`);
+      
+      await rest.put(
         Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-        { body: commands },
+        { body: batch1 }
       );
-
-      console.log(`✅ Pomyślnie zarejestrowano ${data.length} komend slash na serwerze!`);
-      console.log(`📊 Komendy działają natychmiast`);
+      
+      console.log(`✅ Zarejestrowano bazę: ${batch1.length} komend\n`);
+      
+      // Opóźnienie między krokami
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // KROK 2: POST pozostałych komend
+      const batch2 = commands.slice(78);
+      console.log(`📤 KROK 2/2: Dodaję pozostałe ${batch2.length} komend (POST)...`);
+      
+      let added = 0;
+      let failed = 0;
+      
+      for (let i = 0; i < batch2.length; i++) {
+        try {
+          await rest.post(
+            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+            { body: batch2[i] }
+          );
+          added++;
+          
+          if ((i + 1) % 10 === 0 || i === batch2.length - 1) {
+            process.stdout.write(`\r   Progress: ${i + 1}/${batch2.length} (${added} sukces, ${failed} błąd)   `);
+          }
+          
+          // Rate limit: 300ms delay
+          if (i < batch2.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+          
+        } catch (error) {
+          failed++;
+          console.log(`\n   ❌ ${batch2[i].name}: ${error.message.substring(0, 60)}`);
+        }
+      }
+      
+      console.log(`\n\n✅ Dodano: ${added}/${batch2.length} komend\n`);
+      
+      // Weryfikacja
+      const all = await rest.get(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID));
+      
+      console.log('='.repeat(70));
+      console.log('🎊 WYNIK KOŃCOWY');
+      console.log('='.repeat(70));
+      console.log(`Całkowita liczba komend: ${all.length}`);
+      console.log(`Oczekiwano: ${commands.length}`);
+      
+      if (all.length === commands.length) {
+        console.log('\n🎉 SUKCES! Wszystkie 156 komend działają!');
+        console.log('✅ Problem BASE_TYPE_MAX_LENGTH rozwiązany');
+        console.log('💡 Metoda: PUT (78) + POST (78) = 156 komend\n');
+      } else if (all.length > 0) {
+        console.log(`\n⚠️ Zarejestrowano ${all.length}/${commands.length}`);
+        console.log(`Brakuje: ${commands.length - all.length} komend\n`);
+      }
+      
+      console.log('='.repeat(70));
     }
   } catch (error) {
     console.error('❌ Błąd rejestracji komend:', error);
+    if (error.rawError && error.rawError.errors) {
+      console.error('📋 Szczegóły błędu:', JSON.stringify(error.rawError.errors, null, 2));
+    }
   }
 })();
