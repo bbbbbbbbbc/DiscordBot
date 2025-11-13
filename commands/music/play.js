@@ -1,6 +1,9 @@
 const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus, StreamType } = require('@discordjs/voice');
 const play = require('play-dl');
+const youtubedl = require('youtube-dl-exec');
+const ytSearch = require('yt-search');
+const { spawn } = require('child_process');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -90,23 +93,53 @@ module.exports = {
       let stream;
       
       try {
-        const info = await play.video_info(videoUrl);
-        console.log('[PLAY] Got video info:', info.video_details.title);
+        const ytInfo = await youtubedl(videoUrl, {
+          dumpSingleJson: true,
+          noCheckCertificates: true,
+          noWarnings: true,
+          preferFreeFormats: true,
+          format: 'bestaudio'
+        });
+        
+        console.log('[PLAY] Got video info:', ytInfo.title);
+        
+        if (!ytInfo.url) {
+          throw new Error('Nie można pobrać URL streamu audio');
+        }
+        
+        const audioUrl = ytInfo.url;
+        console.log('[PLAY] Audio URL obtained');
         
         videoData = {
-          title: info.video_details.title,
+          title: ytInfo.title || 'Nieznany',
           url: videoUrl,
-          channel: { name: info.video_details.channel?.name || 'Nieznany' },
-          durationRaw: info.video_details.durationRaw || 'N/A',
-          thumbnails: info.video_details.thumbnails || [{ url: 'https://via.placeholder.com/120' }]
+          channel: { name: ytInfo.uploader || ytInfo.channel || 'Nieznany' },
+          durationRaw: ytInfo.duration ? new Date(ytInfo.duration * 1000).toISOString().substr(11, 8) : 'N/A',
+          thumbnails: ytInfo.thumbnail ? [{ url: ytInfo.thumbnail }] : [{ url: 'https://via.placeholder.com/120' }]
         };
         
-        console.log('[PLAY] Creating stream for URL:', videoUrl);
-        const streamData = await play.stream(videoUrl, { quality: 2 });
-        stream = streamData.stream;
-        console.log('[PLAY] Stream created successfully, type:', streamData.type);
+        console.log('[PLAY] Creating audio stream with ffmpeg...');
+        
+        const ffmpeg = spawn('ffmpeg', [
+          '-reconnect', '1',
+          '-reconnect_streamed', '1',
+          '-reconnect_delay_max', '5',
+          '-i', audioUrl,
+          '-analyzeduration', '0',
+          '-loglevel', '0',
+          '-f', 's16le',
+          '-ar', '48000',
+          '-ac', '2',
+          'pipe:1'
+        ], {
+          stdio: ['ignore', 'pipe', 'ignore']
+        });
+        
+        stream = ffmpeg.stdout;
+        
+        console.log('[PLAY] Audio stream created successfully');
       } catch (error) {
-        console.error('[PLAY] play-dl error:', error.message);
+        console.error('[PLAY] Error:', error.message);
         throw new Error(`Nie można odtworzyć: ${error.message}`);
       }
 
@@ -118,7 +151,7 @@ module.exports = {
 
       const player = createAudioPlayer();
       const resource = createAudioResource(stream, {
-        inputType: StreamType.Arbitrary,
+        inputType: StreamType.Raw,
         inlineVolume: true
       });
 

@@ -609,6 +609,13 @@ node index.js
 
 ## 📝 Changelog
 
+### **v2.3.0 - Music System Fix**
+- 🎵 **Naprawiono system muzyczny:** `/play` działa na 100%
+- ✅ **Nowy silnik audio:** youtube-dl-exec + ffmpeg dla stabilnego streamingu
+- ✅ **Zainstalowano @discordjs/opus:** pełna obsługa enkodowania audio Discord
+- 🔧 **Dodano `/join`:** bot dołącza do kanału głosowego (156 komend)
+- ✅ **Pełna funkcjonalność:** play, stop, skip, pause, resume, volume, queue
+
 ### **v2.2.0 - User App Update**
 - 🚀 Dodano obsługę User Install - "Dodaj do Moich aplikacji"
 - ✅ 140+ komend dostępnych w DM i wszędzie
