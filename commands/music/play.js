@@ -1,6 +1,7 @@
 const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
 const play = require('play-dl');
+const ytdl = require('@distube/ytdl-core');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -85,19 +86,23 @@ module.exports = {
       }
 
       console.log('[PLAY] Getting info for URL:', videoUrl);
-      videoInfo = await play.video_info(videoUrl);
-      console.log('[PLAY] Got video info:', videoInfo.video_details.title);
+      const info = await ytdl.getBasicInfo(videoUrl);
+      console.log('[PLAY] Got video info:', info.videoDetails.title);
       
       console.log('[PLAY] Creating stream for URL:', videoUrl);
-      const stream = await play.stream(videoUrl);
+      const stream = ytdl(videoUrl, {
+        filter: 'audioonly',
+        quality: 'highestaudio',
+        highWaterMark: 1 << 25
+      });
       console.log('[PLAY] Stream created successfully');
       
       const videoData = {
-        title: videoInfo.video_details.title,
+        title: info.videoDetails.title,
         url: videoUrl,
-        channel: { name: videoInfo.video_details.channel?.name || 'Nieznany' },
-        durationRaw: videoInfo.video_details.durationRaw || 'N/A',
-        thumbnails: videoInfo.video_details.thumbnails || [{ url: 'https://via.placeholder.com/120' }]
+        channel: { name: info.videoDetails.author?.name || 'Nieznany' },
+        durationRaw: new Date(info.videoDetails.lengthSeconds * 1000).toISOString().substr(11, 8),
+        thumbnails: info.videoDetails.thumbnails || [{ url: 'https://via.placeholder.com/120' }]
       };
 
       const connection = joinVoiceChannel({
@@ -107,7 +112,7 @@ module.exports = {
       });
 
       const player = createAudioPlayer();
-      const resource = createAudioResource(stream.stream, { inputType: stream.type });
+      const resource = createAudioResource(stream);
 
       player.play(resource);
       connection.subscribe(player);
