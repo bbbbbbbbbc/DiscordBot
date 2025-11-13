@@ -1,7 +1,6 @@
 const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus, StreamType } = require('@discordjs/voice');
 const play = require('play-dl');
-const ytdl = require('@distube/ytdl-core');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -86,24 +85,30 @@ module.exports = {
       }
 
       console.log('[PLAY] Getting info for URL:', videoUrl);
-      const info = await ytdl.getBasicInfo(videoUrl);
-      console.log('[PLAY] Got video info:', info.videoDetails.title);
       
-      console.log('[PLAY] Creating stream for URL:', videoUrl);
-      const stream = ytdl(videoUrl, {
-        filter: 'audioonly',
-        quality: 'highestaudio',
-        highWaterMark: 1 << 25
-      });
-      console.log('[PLAY] Stream created successfully');
+      let videoData;
+      let stream;
       
-      const videoData = {
-        title: info.videoDetails.title,
-        url: videoUrl,
-        channel: { name: info.videoDetails.author?.name || 'Nieznany' },
-        durationRaw: new Date(info.videoDetails.lengthSeconds * 1000).toISOString().substr(11, 8),
-        thumbnails: info.videoDetails.thumbnails || [{ url: 'https://via.placeholder.com/120' }]
-      };
+      try {
+        const info = await play.video_info(videoUrl);
+        console.log('[PLAY] Got video info:', info.video_details.title);
+        
+        videoData = {
+          title: info.video_details.title,
+          url: videoUrl,
+          channel: { name: info.video_details.channel?.name || 'Nieznany' },
+          durationRaw: info.video_details.durationRaw || 'N/A',
+          thumbnails: info.video_details.thumbnails || [{ url: 'https://via.placeholder.com/120' }]
+        };
+        
+        console.log('[PLAY] Creating stream for URL:', videoUrl);
+        const streamData = await play.stream(videoUrl, { quality: 2 });
+        stream = streamData.stream;
+        console.log('[PLAY] Stream created successfully, type:', streamData.type);
+      } catch (error) {
+        console.error('[PLAY] play-dl error:', error.message);
+        throw new Error(`Nie można odtworzyć: ${error.message}`);
+      }
 
       const connection = joinVoiceChannel({
         channelId: member.voice.channel.id,
@@ -112,7 +117,10 @@ module.exports = {
       });
 
       const player = createAudioPlayer();
-      const resource = createAudioResource(stream);
+      const resource = createAudioResource(stream, {
+        inputType: StreamType.Arbitrary,
+        inlineVolume: true
+      });
 
       player.play(resource);
       connection.subscribe(player);
