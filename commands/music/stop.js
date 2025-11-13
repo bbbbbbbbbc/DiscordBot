@@ -29,6 +29,7 @@ module.exports = {
 
     const queue = client.musicQueue.get(guild.id);
     
+    if (queue.ffmpeg) queue.ffmpeg.kill();
     queue.player.stop();
     queue.connection.destroy();
     client.musicQueue.delete(guild.id);

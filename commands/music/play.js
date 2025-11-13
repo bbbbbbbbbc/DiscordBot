@@ -114,7 +114,7 @@ module.exports = {
           title: ytInfo.title || 'Nieznany',
           url: videoUrl,
           channel: { name: ytInfo.uploader || ytInfo.channel || 'Nieznany' },
-          durationRaw: ytInfo.duration ? new Date(ytInfo.duration * 1000).toISOString().substr(11, 8) : 'N/A',
+          durationRaw: ytInfo.duration ? new Date(ytInfo.duration * 1000).toISOString().substring(11, 19) : 'N/A',
           thumbnails: ytInfo.thumbnail ? [{ url: ytInfo.thumbnail }] : [{ url: 'https://via.placeholder.com/120' }]
         };
         
@@ -133,6 +133,10 @@ module.exports = {
           'pipe:1'
         ], {
           stdio: ['ignore', 'pipe', 'ignore']
+        });
+        
+        ffmpeg.on('error', (err) => {
+          console.error('[PLAY] FFmpeg error:', err);
         });
         
         stream = ffmpeg.stdout;
@@ -159,7 +163,7 @@ module.exports = {
       connection.subscribe(player);
 
       if (!client.musicQueue) client.musicQueue = new Map();
-      client.musicQueue.set(guild.id, { connection, player, queue: [videoData] });
+      client.musicQueue.set(guild.id, { connection, player, queue: [videoData], ffmpeg });
 
       const embed = new EmbedBuilder()
         .setColor('#FF0000')
@@ -181,12 +185,15 @@ module.exports = {
       player.on(AudioPlayerStatus.Idle, () => {
         const queue = client.musicQueue.get(guild.id);
         if (queue) {
+          if (queue.ffmpeg) queue.ffmpeg.kill();
           queue.connection.destroy();
           client.musicQueue.delete(guild.id);
         }
       });
 
       connection.on(VoiceConnectionStatus.Disconnected, () => {
+        const queue = client.musicQueue.get(guild.id);
+        if (queue && queue.ffmpeg) queue.ffmpeg.kill();
         client.musicQueue.delete(guild.id);
       });
 
